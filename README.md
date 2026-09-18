@@ -66,7 +66,7 @@ See `tutorials/README.md` for the registry and `docs/release-verification.md` fo
 
 ## Release status
 
-**Candidate.** Static/unit checks — including the standalone generator parity checks (`tools/build_notebook.py --check`, `tests/test_notebook_parity.py`, `tests/test_finetune_parity.py`) — do not constitute clean-runtime notebook evidence. One local fresh-kernel execution of each notebook is recorded in `docs/release-verification.md` as pre-flight; the supported-runtime runs are pending. Complete those records against the exact release revision before calling the notebooks release-grade.
+**Candidate.** Static/unit checks — including the standalone generator parity checks (`tools/build_notebook.py --check`, `tests/test_notebook_parity.py`, `tests/test_finetune_parity.py`) — do not constitute clean-runtime notebook evidence. `docs/release-verification.md` records one local fresh-kernel pre-flight of each notebook and one clean-room Kaggle execution of each committed blob (CPU for the inference notebook, Tesla T4 for the adaptation notebook; both PASSED 2026-09-18). Promotion to release-grade is a review decision against those records for the exact release revision.
 
 ## Documentation
 

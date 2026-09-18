@@ -142,24 +142,27 @@ for the stated runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| — | — | — | — | — | none recorded yet |
+| 2026-09-18 | `9498ad0` / `1b0645e8806a` | Kaggle CPU (`kurtvalcorza/dimer-nb2-mask2former-panoptic` v1; image `gcr.io/kaggle-images/python`, Python 3.12.13, image torch 2.10.0+cpu / transformers 5.0.0 / numpy 2.0.2 before the pinned install; executor `runner.py`, nbclient in a fresh `python3` kernel; no repository checkout, clean model cache) | Default sample path: pinned install replaced numpy 2.0.2 → 2.5.3, the notebook's own guard raised `Restart the runtime, then rerun from the top` (pass 1, 198.5 s) and the executor restarted and reran from the top (pass 2, 67.1 s); `stage_missing_files` fetched all 4 manifest entries (190 MB) from the Hub at the pinned revision; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cpu`; drawn scene → one `stop sign` 0.601 over 8.3 %, void 91.7 %, `sample-sanity` class-agnostic PQ 0.33; blank → `sky-other-merged` 0.798 (100 %), noise → 0.572 (94.9 %); public photograph digest matched → two `cat` (0.998, 0.997), two `remote` (0.994, 0.953), `couch` 0.811, void 4.9 %, `not-measurable`; 8 outputs written | 265.7 s | **PASSED** — 10/10 ok code cells (1 restart after the install cell), results identical to the local pre-flight; REL1/REL8 satisfied for this blob |
+| 2026-09-18 | `9498ad0` / `baa9ab413435` | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-mask2former-panoptic-finetune` v1, pushed with `--accelerator NvidiaTeslaT4`; T4 15360 MiB, driver 580.159.04; image torch 2.10.0+cu128; same executor, no checkout, clean cache) | Default adaptation path: install pass 181.5 s → restart guard → pass 2 77.1 s; 4 manifest entries staged; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cuda:0`, float32; dataset manifest accepted (24 records, 1 rejection finding); 18/6 split; re-head reported the three expected tensors; baseline PQ 0.0, trivial all-`sky` PQ 0.103; `finetune` 54 steps in 16.2 s (mean epoch loss 33.6 → 6.7); adapted held-out PQ 0.866 (per class sky 0.998, ground 0.999, disc 0.951, box 0.397, triangle 0.986 — the CUDA head initialisation and kernels moved the per-class numbers relative to the CPU pre-flight while the mean stayed within 0.001); new-seed scenes PQ 0.954; `save_artifact` 3 files / 189,996,737 bytes; `load_artifact` reproduced PQ 0.866 exactly with pixel agreement 1.0; tampered manifest refused | 258.6 s | **PASSED** — 13/13 ok code cells (1 restart after the install cell); REL1/REL8 satisfied for this blob |
 
 ## Current status
 
-No clean-runtime execution in a **supported** runtime (Colab or Kaggle) has been recorded yet. What
-exists: static validation (`tools/validate_release_assets.py`), the generator parity checks (`--check`
-OK for both templates), the offline unit suite, and one **local fresh-kernel execution** of each
-generated notebook (table above) that exercised the standalone carrier, verification, segmentation, the
-evaluation reports, the adaptation path with its artifact round-trip, and every export — which is
-necessary but not promotion evidence because the workstation is not a supported runtime. The registry
-status remains **Candidate** until a reviewer confirms a recorded supported-runtime run of each notebook
-against the notebook blob under review and an integrator promotes it. Facts a reviewer should weigh:
-the CUDA path has not been executed; the segment scores are uncalibrated softmaxes and the three
-post-processing thresholds are the caller's (one segment at 0.5, none at 0.8 on the drawn scene); the
-drawn samples are flat high-contrast shapes, so the inference PQ says nothing about photographs and the
-adaptation PQ (0.866 held-out, one seed, one split, no dispersion) says the plumbing works, not that a
-real dataset would adapt; the blank and noise probes were labelled `sky-other-merged` at 0.80 / 0.57,
-which is an observation, not a guarantee; the public photograph is fetched over plain HTTP (digest-pinned)
-from a host the notebook can be told to skip; the weight licence is MIT by resolution from the upstream
-code repository, not by a Hub declaration (`docs/WEIGHTS.md`); and the pinned processor configuration
-carries a `_max_size` key the pinned `transformers` warns about at load and ignores.
+Clean-runtime execution in a **supported** runtime is now recorded for both notebooks (table above): the
+committed blobs `1b0645e8806a` (Kaggle CPU, 265.7 s) and `baa9ab413435` (Kaggle Tesla T4, 258.6 s)
+ran top-to-bottom from GitHub raw content with no repository checkout and a clean model cache, through
+the notebooks' own restart guard, with every default-path stage, export, the artifact round-trip and the
+tampered-artifact refusal observed. The evidence (executor `run_summary.json`, both executed notebook
+passes, the `outputs/` directory) is kept under `Projects/.agent/backups/kaggle-m2f-2026-09-18/out/`
+with its `LEDGER.md`. The registry status stays **Candidate** until a reviewer confirms these records
+against the notebook blob under review and an integrator promotes it. Facts a reviewer should weigh: the
+CUDA path was exercised only by the `E2E` notebook (the `TASK-INFERENCE` run was CPU); the segment
+scores are uncalibrated softmaxes and the three post-processing thresholds are the caller's (one segment
+at 0.5, none at 0.8 on the drawn scene); the drawn samples are flat high-contrast shapes, so the
+inference PQ says nothing about photographs and the adaptation PQ (0.866 held-out on both CPU and T4, one
+seed, one split, no dispersion; per-class values moved between devices — `box` 0.509 on CPU, 0.397 on
+T4) says the plumbing works, not that a real dataset would adapt; the blank and noise probes were
+labelled `sky-other-merged` at 0.80 / 0.57, which is an observation, not a guarantee; the public
+photograph is fetched over plain HTTP (digest-pinned) from a host the notebook can be told to skip; the
+weight licence is MIT by resolution from the upstream code repository, not by a Hub declaration
+(`docs/WEIGHTS.md`); and the pinned processor configuration carries a `_max_size` key the pinned
+`transformers` warns about at load and ignores.
