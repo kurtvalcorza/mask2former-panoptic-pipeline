@@ -1,0 +1,30 @@
+{
+  "format": "dimer_hf_snapshot",
+  "formatVersion": 1,
+  "modelKey": "mask2former-swin-tiny-coco-panoptic",
+  "modelId": "facebook/mask2former-swin-tiny-coco-panoptic",
+  "revision": "df6b1142ff50c3276559d9d78f35f6a579c75a77",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3190,
+      "sha256": "8cf3afebeb22ca83bf13376d55c7781d3c96627bb4532de819ae3cec0ae303e9"
+    },
+    {
+      "path": "config.json",
+      "bytes": 82185,
+      "sha256": "c638e5e4aeada33f37287509785306277cb6b60998cdd9dd13e9df7f0aa90055"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 190052872,
+      "sha256": "8e154c4f946f4fad9aa511a7d706c89c4254cc6eee28fd932e52c32394c5a29f"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "bytes": 538,
+      "sha256": "c25764d27c09d4cd2dcb0100f54221c00c7169446425cc70b2b40481157c3e5c"
+    }
+  ],
+  "totalBytes": 190138785
+}
