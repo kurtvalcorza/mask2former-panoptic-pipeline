@@ -13,6 +13,41 @@ TEMPLATE = {
     "notebook_name": "mask2former_panoptic_colab.ipynb",
     "profile": "TASK-INFERENCE",
     "mode": "GUIDED",
+    "isolated_runtime": True,
+    "infrastructure_labels": True,
+    # The fleet's uv isolated-environment mechanism (bioclip2-biodiversity-pipeline, siglip-v1-zero-shot-pipeline): a
+    # managed CPython, a size- and SHA-256-verified uv wheel, and a lock compiled from the pyproject pins with
+    # `uv pip compile pyproject.toml --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes
+    # --only-binary :all: -o tutorials/requirements-colab.lock.txt` (shared by both notebooks).
+    "managed_python": "3.12.12",
+    "uv": {
+        "version": "0.12.15",
+        "url": "https://files.pythonhosted.org/packages/1e/fd/432451d732917c49152a291de3ef171aa6b0f1a22d39780fb2c1f085ca4c/uv-0.12.15-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "bytes": 20081404,
+        "sha256": "aee9802f46bae436bd91751bb33ddeb379ef1596b5c19df193219d545d244b60",
+    },
+    "lock": "tutorials/requirements-colab.lock.txt",
+    "run_all": (
+        "Selecting **Run all** in a fresh supported runtime builds an isolated environment from the hash-locked pins (nothing is "
+        "installed into the notebook's own Python, so no restart is needed and Run all completes in one pass), stages and "
+        "digest-verifies the pinned snapshot, draws the tutorial sample automatically, validates it into an input manifest "
+        "before the model runs, segments it locally, fetches one digest-pinned public photograph, writes the evaluation "
+        "reports, and exports machine-readable outputs with provenance. The default path needs no repository clone, no DIMER "
+        "worker or service, no credential, no upload dialog and no configuration edit (NOTEBOOK_SPEC 2.0 §5)."
+    ),
+    "byod": (
+        "After the sample workflow completes, set `USE_BYOD = True` in Section 4 — with `BYOD_PATH` set to your image file "
+        "(Kaggle, Jupyter) or left empty for the Colab upload dialog — and re-run from that cell. Your image passes through the "
+        "same validation, segmentation, evaluation-report and export cells as the sample; with no reference map its verdict is "
+        "`not-measurable`. The image stays inside this runtime. BYOD is optional and never part of the default path."
+    ),
+    "guided": {
+        "opening": [
+            (
+                "**Who this notebook is for.** A learner who knows basic Python, has run a Colab or Jupyter notebook, and wants to see what a panoptic segmentation model returns for an image, how to read its map and scores without over-reading them, and why nothing here is a COCO accuracy number. No prior experience with Mask2Former is assumed; *panoptic*, *thing*, *stuff*, *void*, *query* and *PQ* are explained where they first matter and again in the **Glossary**. The intended audience is learners and practitioners deciding whether a pretrained segmenter fits their images; this is a teaching run, not a benchmark. CPU is enough; a GPU is used automatically when present.\n\n**Input → Model → Output.**\n\n| | What it is in this notebook |\n|---|---|\n| Input | one RGB image and three thresholds (default: a 640×480 scene drawn in code with its exact region map; plus one digest-pinned COCO photograph; BYOD: your own image) |\n| Model | Mask2Former with a Swin-T backbone trained on COCO panoptic: 100 queries, each a mask and a class over 133 categories, merged by a fixed per-pixel rule |\n| Output | a segment-id map (or void) at input resolution, one entry per segment (label, thing/stuff, score, area, box), a class-agnostic PQ against the drawn regions (`sample-sanity`), and `not-measurable` for inputs without a reference |\n\n**How to use this notebook.** Choose a runtime (CPU works; **Runtime → Change runtime type → T4 GPU** is faster), then **Runtime → Run all**. Run all completes in one pass: Section 1 installs nothing into the notebook's own Python, so no restart is needed. Sections 1–3 are **infrastructure** — the isolated environment, the carried package and the pinned model — and their cells are collapsed. The learning path starts in Section 4. Form fields (`# @param`) are the knobs. Before each principal result the notebook asks you to **Predict**; after it comes a collapsible **Check your reasoning** with a worked answer from the recorded Kaggle CPU run of 18 September 2026 (`docs/release-verification.md`). The companion `E2E` notebook adapts the model to a vocabulary of your own. **Troubleshooting**, a **Glossary** and a **Conclusion** template are at the end.\n\n**Roadmap:** 1–3 infrastructure → 4 the drawn scene (or your image) → 5 validation into an input manifest → 6 segment and read the output *(core concept: queries, thresholds, void, uncalibrated scores)* → 7 an in-domain photograph *(observation, not a metric)* → 8 the evaluation report *(evaluation practice)* → 9 export *(engineering)* → interpretation, troubleshooting, glossary, conclusion."
+            )
+        ]
+    },
     "pipeline_class": "Mask2FormerPanopticPipeline",
     "weights_key": "mask2former-swin-tiny-coco-panoptic",
     "modules": ["samples.py", "pipeline.py"],
@@ -97,14 +132,18 @@ TEMPLATE = {
                 "(`sky`, `ground`) and three things. The regions are the references for the panoptic-quality sanity check "
                 "later. They are not COCO categories and not a labelled dataset, so nothing here is a COCO measurement. The "
                 "image digest is printed for the record. BYOD is optional and disabled by default; when enabled, upload one "
-                "image — no reference map exists for it, so the evaluation report will be `not-measurable`.\n\n"
+                "image (`BYOD_PATH` on Kaggle or Jupyter; leave it empty on Colab for the upload dialog) — no reference map exists "
+                "for it, so the evaluation report will be `not-measurable`. A missing file, a cancelled upload and an unreadable "
+                "image are refused with a message naming the file.\n\n"
                 "The three post-processing thresholds are **caller-owned request parameters**: `score_threshold` gates queries "
                 "on their best class probability (`SCORE_THRESHOLD = 0.5` is the pinned `transformers` default; the upstream "
                 "Mask2Former inference uses 0.8 — on the drawn scene 0.5 keeps one segment and 0.8 keeps none, as the smoke run "
                 "recorded), `mask_threshold` is the per-pixel cut that separates a segment from void, and `overlap_threshold` "
                 "drops a query that lost most of its mask to stronger queries. Nothing is validated in this cell — the next "
                 "section hands the image to the pipeline's own validation stage, which is the only checker. Look for a "
-                "dictionary naming the sample kind, the image size and digest, the thresholds and the reference regions."
+                "dictionary naming the sample kind, the image size and digest, the thresholds and the reference regions.\n\n"
+                "**Predict:** a model trained on COCO's 133 categories sees a red disc, a blue box and a yellow triangle. What will it call them?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nMostly nothing: none of the shapes is a COCO category. The recorded run (Section 6) kept a single query, `stop sign` at 0.601 over the red disc, and left 91.7 % of the image void. A drawing is out of domain by construction; that is the point of the sample.\n\n</details>"
             ),
             "code": (
                 "import hashlib\n"
@@ -112,15 +151,36 @@ TEMPLATE = {
                 "import numpy as np\n"
                 "from PIL import Image\n\n"
                 'USE_BYOD = False  # @param {{type:"boolean"}}\n'
+                "# Kaggle / Jupyter: the path of one image file. Empty: the Colab upload dialog.\n"
+                "BYOD_PATH = ''  # @param {{type:\"string\"}}\n"
                 'score_threshold = 0.5  # @param {{type:"number"}}\n'
                 'overlap_threshold = 0.8  # @param {{type:"number"}}\n'
                 'mask_threshold = 0.5  # @param {{type:"number"}}\n\n'
+                "\n"
+                "def byod_image(path_text):\n"
+                "    \"\"\"One image from BYOD_PATH, or from exactly one Colab upload; each refusal names the file and the rule.\"\"\"\n"
+                "    if path_text.strip():\n"
+                "        path = Path(path_text.strip()).expanduser()\n"
+                "        if not path.is_file():\n"
+                "            raise FileNotFoundError(f'BYOD_PATH {{str(path)!r}} is not a file: give the path of one image (JPEG, PNG, ...)')\n"
+                "        name, data = path.name, path.read_bytes()\n"
+                "    else:\n"
+                "        try:\n"
+                "            from google.colab import files\n"
+                "        except ImportError:\n"
+                "            raise RuntimeError('USE_BYOD = True but BYOD_PATH is empty and this runtime has no Colab upload dialog: set BYOD_PATH to one image file') from None\n"
+                "        uploaded = files.upload() or {{}}\n"
+                "        if len(uploaded) != 1:\n"
+                "            raise RuntimeError(f'expected exactly one uploaded image, got {{len(uploaded)}} ({{sorted(uploaded) or \"upload cancelled or empty\"}}): run this cell again, or set BYOD_PATH')\n"
+                "        name, data = next(iter(uploaded.items()))\n"
+                "    try:\n"
+                "        loaded = Image.open(io.BytesIO(data))\n"
+                "        loaded.load()\n"
+                "    except OSError as exc:\n"
+                "        raise ValueError(f'{{name}}: not a readable image ({{exc}})') from None\n"
+                "    return name, loaded\n\n\n"
                 "if USE_BYOD:\n"
-                "    from google.colab import files\n"
-                "    uploaded = files.upload()\n"
-                "    image_name = next(iter(uploaded))\n"
-                "    image = Image.open(io.BytesIO(uploaded[image_name]))\n"
-                "    image.load()\n"
+                "    image_name, image = byod_image(BYOD_PATH)\n"
                 "    reference = None\n"
                 "    sample_kind = 'BYOD'\n"
                 "else:\n"
@@ -146,7 +206,9 @@ TEMPLATE = {
                 "the verdict. The manifest is written to `outputs/{stem}_input_manifest.json`. To show what rejection looks like, "
                 "the cell also validates a request whose `score_threshold` is outside `[0, 1]` and records the pipeline's own "
                 "error message as a finding. Inside the pipeline the image is converted to RGB and resized; nothing else is "
-                "dropped or altered. The pipeline cannot tell whether an image is a photograph: that contract is the caller's."
+                "dropped or altered. The pipeline cannot tell whether an image is a photograph: that contract is the caller's.\n\n"
+                "**Predict:** will a `score_threshold` of 1.5 be accepted?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nNo: thresholds must lie in `[0, 1]`, so the probe is rejected and the pipeline's own message is recorded under `findings`, while the real request is accepted.\n\n</details>"
             ),
             "code": (
                 "import json\n"
@@ -179,7 +241,9 @@ TEMPLATE = {
                 "frame to that one query (area 1.0), which is why the carried module implements the upstream per-pixel rule "
                 "itself. The cell also probes two degenerate inputs (a blank white image and uniform noise) and records what "
                 "the model says about nothing: the smoke run got `sky-other-merged` at 0.798 over the whole blank image and at "
-                "0.572 over 95 % of the noise — an observation about this checkpoint, not a guarantee."
+                "0.572 over 95 % of the noise — an observation about this checkpoint, not a guarantee.\n\n"
+                "**Predict:** a blank white image has nothing in it. Will the map be void?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nNo. The recorded Kaggle run labelled the whole blank image `sky-other-merged` at 0.798 and 94.9 % of the noise image the same class at 0.572. An out-of-domain image is not guaranteed a void map; a confident-looking score on nothing is exactly why scores are not probabilities.\n\n</details>"
             ),
             "code": (
                 "import time\n\n"
@@ -211,7 +275,9 @@ TEMPLATE = {
                 "produced and checks it against the labels a reader would expect (`cat`, `couch`, `remote`) as a **plausibility "
                 "observation**, not a metric. The smoke run found five segments — two `cat` (0.998, 0.997), two `remote` (0.994, "
                 "0.953) and `couch` (0.811) — with 4.9 % void. If the host is unreachable the cell stops with the error rather "
-                "than skipping silently; set `FETCH_PUBLIC_PHOTO = False` to run without it."
+                "than skipping silently; set `FETCH_PUBLIC_PHOTO = False` to run without it.\n\n"
+                "**Predict:** on a real COCO photograph of two cats on a couch, how much of the image will be void?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nVery little: the recorded run found two `cat` (0.998, 0.997), two `remote` (0.994, 0.953) and a `couch` (0.811) with 4.9 % void. In domain, the same model fills almost the whole frame — compare the 91.7 % void on the drawing.\n\n</details>"
             ),
             "code": (
                 "import urllib.request\n\n"
@@ -257,7 +323,9 @@ TEMPLATE = {
                 "PQ 0.33 here (one match, the disc, at IoU 0.991; four regions unmatched). The photograph and any BYOD upload "
                 "have no reference, so their verdict is `not-measurable` and the report states what would make the task "
                 "measurable. The reports are written to `outputs/{stem}_evaluation_report.json` (sample) and "
-                "`outputs/{stem}_photo_evaluation_report.json` (photograph, when fetched)."
+                "`outputs/{stem}_photo_evaluation_report.json` (photograph, when fetched).\n\n"
+                "**Predict:** the disc was matched at IoU 0.991. Why is the PQ only about a third?\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nBecause PQ counts every region: one match out of five drawn regions, with the other four left void (false negatives), gives RQ well below 1 even though the one match is nearly perfect. The recorded run scored PQ 0.33, verdict `sample-sanity`.\n\n</details>"
             ),
             "code": (
                 "report = evaluation_report(result, reference, sample_kind=sample_kind)\n"
@@ -351,10 +419,35 @@ TEMPLATE = {
         "machine-readable outputs in the tested runtime — without the repository being reachable. It does **not** establish "
         "benchmark superiority, deployment calibration, safety for high-consequence decisions, or production fitness on an unseen "
         "domain.\n\n"
-        "**Next experiments:** set `score_threshold` to 0.8 (the upstream value) and 0.3 and watch the drawn scene lose and gain "
+        "## Change one thing (next experiments)\n\n"
+        "Set `score_threshold` to 0.8 (the upstream value) and 0.3 and watch the drawn scene lose and gain "
         "segments; lower `mask_threshold` to 0.3 and see void shrink; enable `USE_BYOD` with a photograph you know; build a "
         "reference region map of your own (an int32 array of ids plus a segment list) and pass it to `evaluation_report` to see "
         "the verdict switch to `sample-sanity`; then open the `E2E` notebook to give the model your own vocabulary.\n\n"
+        "## Troubleshooting\n\n"
+        "Section 1 stops with `This notebook needs a Linux x86_64 runtime`: use Google Colab, Kaggle or a Linux Jupyter host. "
+        "`The pinned uv wheel failed its size/SHA-256 check`: run Section 1 again; if it repeats, the download is being altered. "
+        "`The isolated environment's Python process exited`: the worker crashed, usually out of memory — restart the session "
+        "and choose **Run all**. A size or SHA-256 error in Section 3: delete the file under `weights/` and re-run Section 3. "
+        "`public photograph digest … != pinned` or a timeout in Section 7: the photograph host changed or is unreachable — set "
+        "`FETCH_PUBLIC_PHOTO = False` and re-run. With `USE_BYOD = True`: `BYOD_PATH … is not a file`, `expected exactly one "
+        "uploaded image` or `… no Colab upload dialog` — fix the path or the upload; `… not a readable image` — the file is not "
+        "an image Pillow can decode.\n\n"
+        "## Glossary\n\n"
+        "- **Panoptic segmentation:** every pixel gets exactly one segment — a countable *thing* instance or an amorphous *stuff* region — or void.\n"
+        "- **Query:** one of 100 learned slots; each proposes a mask and a class, and a fixed rule merges them into the map.\n"
+        "- **Void:** pixels no confident query claims.\n"
+        "- **Thresholds:** `score_threshold` (keep a query), `mask_threshold` (per-pixel cut), `overlap_threshold` (drop a query that lost most of its mask).\n"
+        "- **IoU:** intersection over union of two masks.\n"
+        "- **PQ = SQ × RQ:** panoptic quality — mean IoU of matched segments times a recognition score that penalises misses and false segments.\n"
+        "- **`sample-sanity` / `not-measurable`:** the report's verdicts when a drawn reference exists, and when no reference exists.\n"
+        "- **Isolated environment:** the separate hash-locked Python environment built in Section 1; every later cell runs there.\n\n"
+        "## Conclusion (your notes)\n\n"
+        "1. In two sentences: what does the map guarantee, and what does a segment's score not tell you?\n"
+        "2. Why was the drawn scene mostly void while the photograph was almost fully covered?\n"
+        "3. Which of your predictions were wrong, and what did the output show instead?\n"
+        "4. What reference data would you need before quoting a PQ for your own images?\n\n"
+        "**Your notes:**\n\n"
         "## References\n\n"
         "- Repository README: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/README.md\n"
         "- Repository model card: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/MODEL_CARD.md\n"

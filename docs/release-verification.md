@@ -23,8 +23,9 @@ CI runs `tools/validate_release_assets.py`, which checks:
   `src/mask2former_panoptic_pipeline/samples.py` and `pipeline.py` after the generator's documented
   rewrites, in dependency order; the inline `MANIFEST` equal to the committed snapshot manifest and
   the inline `PINS` equal to the `pyproject.toml` runtime pins; each notebook byte-identical (on LF)
-  to `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with its
-  restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+  to `tools/build_notebook.py` output for its recorded revision; exactly one kernel cell, which builds (or reuses) the
+  hash-locked isolated environment from `tutorials/requirements-colab.lock.txt` and routes every later cell to it (no in-kernel
+  install, no restart); `NOTEBOOK_SOURCE` recorded in exports;
 - `MODEL_ID`/`MODEL_REVISION` are bound only in the carried module cell (and repeated in the inline
   manifest, which the notebook asserts against the module before fetching), the revision is a 40-hex
   immutable commit, and the same identity string appears in `README.md`, `MODEL_CARD.md`, and
