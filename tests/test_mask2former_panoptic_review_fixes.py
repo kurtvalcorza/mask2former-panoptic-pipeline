@@ -120,10 +120,38 @@ def test_exactly_two_leading_kernel_cells_and_a_carried_lock_matching_the_reposi
     assert hashlib.sha256(lock.encode("utf-8")).hexdigest() == digest
     assert lock == (ROOT / "tutorials" / "requirements-colab.lock.txt").read_text(encoding="utf-8")
     build = _load_tool("build_notebook")
-    build.check_lock(build._pins(ROOT), lock)  # every pyproject pin at its version, every entry hashed
-    assert len(build.lock_packages(lock)) == 47
+    template = _load_tool("notebook_template").TEMPLATE
+    build.check_lock(build._pins(ROOT, template), lock)  # every pin at its version, every entry hashed
+    assert len(build.lock_packages(lock)) == 48
     md = _markdown()
     assert "Restart the runtime" not in md and "installs the pinned dependencies" not in md
+
+
+def test_pins_file_is_the_pyproject_pins_plus_scipy():
+    build = _load_tool("build_notebook")
+    template = _load_tool("notebook_template").TEMPLATE
+    assert template["pins_file"] == "tutorials/requirements-colab.in"
+    assert build._pins(ROOT, template) == build._pins(ROOT) + ["scipy==1.18.1"]
+    assert build._pins(ROOT, _load_tool("notebook_template_finetune").TEMPLATE) == build._pins(ROOT)  # E2E unchanged
+
+
+def test_lock_covers_every_backend_the_model_classes_require():
+    """The isolated environment sees only the lock: every `requires_backends` / `is_<x>_available()` import guard in
+    the transformers modules the notebook builds (Mask2FormerForUniversalSegmentation, Mask2FormerImageProcessor, Swin)
+    must name a locked distribution (Colab T4 run of fe62ef4: Mask2FormerLoss raised for scipy)."""
+    transformers = pytest.importorskip("transformers")
+    build = _load_tool("build_notebook")
+    locked = build.lock_packages((ROOT / "tutorials" / "requirements-colab.lock.txt").read_text(encoding="utf-8"))
+    models = Path(transformers.__file__).parent / "models"
+    text = "".join(p.read_text(encoding="utf-8") for p in sorted((models / "mask2former").glob("*.py")) + [models / "swin" / "modeling_swin.py"])
+    required = set()
+    for args in re.findall(r"requires_backends\(\s*\w+\s*,\s*\[([^\]]*)\]", text):
+        required |= set(re.findall(r"['\"]([\w-]+)['\"]", args))
+    assert "scipy" in required
+    optional = {"accelerate"}  # guarded by is_accelerate_available() only for multi-device loss reduction
+    missing = sorted(name for name in required - optional if name.lower() not in locked)
+    assert not missing, missing
+    assert locked["scipy"] == "1.18.1"
 
 
 def test_the_companion_e2e_notebook_still_renders_as_generator_2():
@@ -168,7 +196,7 @@ def test_release_records_call_the_kaggle_run_restart_assisted():
     verification = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
     row = next(line for line in verification.splitlines() if line.startswith("| 2026-09-18 | `9498ad0` / `1b0645e8806a`"))
     assert "Completed only after a manual restart" in row and "PASSED" not in row
-    assert "No hosted run of the new blob exists yet" in verification
+    assert "No hosted run of the current\nblob exists yet" in verification and "requires scipy" in verification
     registry = (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
     inference_row = next(line for line in registry.splitlines() if line.startswith("| `mask2former_panoptic_colab.ipynb`"))
     assert "verified — clean-runtime" not in inference_row and "only after a manual restart" in inference_row

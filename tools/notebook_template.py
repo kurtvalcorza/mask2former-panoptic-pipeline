@@ -5,7 +5,7 @@ modules, and the model pin/stage/verify cells are produced by the generator from
 sources so they cannot drift from the package.
 
 Review fixes (Notebook Review Framework v1, review PR #7, M2P-M1..M2 / M2P-m1..m5): the runtime is the fleet's uv
-isolated environment (generator /2.1, no in-kernel install, no restart; lock compiled from the pyproject pins and
+isolated environment (generator /2.1, no in-kernel install, no restart; lock compiled from the pyproject pins plus scipy and
 constrained to florence2-vision-language-pipeline's T4-passed lock); the guided layer (audience, input/output
 contract, how to use, roadmap, predictions, worked answers, a change-one-thing activity in Section 10,
 troubleshooting, glossary, conclusion) is added and Sections 1-3 are labelled and collapsed as Infrastructure;
@@ -32,10 +32,15 @@ TEMPLATE = {
     "isolated_runtime": True,
     # M2P-M1: the fleet's uv isolated-environment mechanism (ast-audio-classification-pipeline / bioclip2-biodiversity-pipeline;
     # generator /2.1 as in florence2-vision-language-pipeline 9c4e95a and gliner-ner-pipeline fe3d5ba): managed CPython, a size-
-    # and SHA-256-verified uv wheel, and a lock compiled from the pyproject pins with `uv pip compile pyproject.toml -c <versions of
-    # florence2-vision-language-pipeline's T4-passed tutorials/requirements-colab.lock.txt @ 9c4e95a> --python-version 3.12
-    # --python-platform x86_64-manylinux_2_28 --generate-hashes --only-binary :all: -o tutorials/requirements-colab.lock.txt`.
-    # The result is florence2's 48 packages at the same versions and hashes minus pyarrow (47 packages, no new one).
+    # and SHA-256-verified uv wheel, and a lock compiled from `pins_file` (the pyproject pins plus scipy==1.18.1) with
+    # `uv pip compile tutorials/requirements-colab.in -c <versions of florence2-vision-language-pipeline's T4-passed
+    # tutorials/requirements-colab.lock.txt @ 9c4e95a, plus grounding-dino-detection-pipeline's T4-passed scipy==1.18.1>
+    # --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes --only-binary :all:
+    # -o tutorials/requirements-colab.lock.txt`: florence2's packages at the same versions and hashes minus pyarrow, plus
+    # scipy (48 packages). scipy is required at model construction: transformers 4.57.6 builds Mask2FormerLoss in
+    # Mask2FormerForUniversalSegmentation.__init__ and it calls requires_backends(['scipy']) (Colab T4 run of fe62ef4 failed
+    # there). The pins file keeps pyproject.toml, and so the E2E notebook's inline PINS, unchanged.
+    "pins_file": "tutorials/requirements-colab.in",
     "managed_python": "3.12.12",
     "uv": {
         "version": "0.12.15",

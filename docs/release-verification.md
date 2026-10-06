@@ -152,9 +152,15 @@ for the stated runtime, not general estimates.
 ## Current status
 
 **`TASK-INFERENCE` notebook after the M2P review fixes (2026-10-06):** Section 1 now builds an isolated uv
-environment from the hash-locked `tutorials/requirements-colab.lock.txt` (47 packages; the same versions and
-hashes as florence2-vision-language-pipeline's lock, which passed a Colab T4 Run all, minus `pyarrow`) and routes
-every later cell to it, so no restart should be needed. **No hosted run of the new blob exists yet.** The
+environment from the hash-locked `tutorials/requirements-colab.lock.txt` (48 packages compiled from
+`tutorials/requirements-colab.in`, the `pyproject.toml` pins plus `scipy==1.18.1`; the same versions and hashes as
+florence2-vision-language-pipeline's lock, which passed a Colab T4 Run all, minus `pyarrow`, plus the scipy wheel
+of grounding-dino-detection-pipeline's T4-passed lock) and routes every later cell to it, so no restart should be
+needed. A Colab T4 run (Colab CLI, 2026-10-06) of the first fix commit `fe62ef4` (blob `0ae808e38df7`) needed no
+restart but **failed** at the Section 3 model cell: transformers 4.57.6 builds `Mask2FormerLoss` inside
+`Mask2FormerForUniversalSegmentation.__init__`, which requires scipy, and that lock had none (the in-kernel
+install had relied on the hosted image's own scipy). scipy is now pinned and locked. **No hosted run of the current
+blob exists yet.** The
 offline check (Windows workstation CPU, torch 2.13.0+cpu, the kernel cells on their
 `DIMER_NOTEBOOK_CI_PREINSTALLED=1` path, weights pre-staged) reproduced every default-path number below; it is
 not clean-runtime evidence. Remaining gate: one Colab Run all of the new blob in one pass, with one accepted and

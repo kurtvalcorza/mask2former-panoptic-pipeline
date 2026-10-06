@@ -160,5 +160,7 @@ def test_both_notebooks_share_the_package_and_the_pins() -> None:
     """The two templates carry the same modules and the same pyproject pins (ENV2): one runtime, two profiles."""
     primary = _load("notebook_template").TEMPLATE
     assert primary["modules"] == TEMPLATE["modules"] == ["samples.py", "pipeline.py"]
-    assert build._pins(ROOT, primary) == build._pins(ROOT, TEMPLATE)
+    # The inference notebook's pins file adds scipy (Mask2FormerLoss needs it at construction; review fix row 43); the
+    # E2E notebook still carries the pyproject pins until its own isolated-environment fix.
+    assert build._pins(ROOT, primary) == build._pins(ROOT, TEMPLATE) + ["scipy==1.18.1"]
     assert primary["weights_key"] == TEMPLATE["weights_key"]
