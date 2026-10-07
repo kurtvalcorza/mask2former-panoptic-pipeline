@@ -158,7 +158,7 @@ def test_swp_r_section_1_is_idempotent_and_keeps_the_live_worker(tmp_path, monke
 # The inference notebook's guided layer is the review PR #7's (M2P-M2); the fine-tune notebook's is the sweep's.
 GUIDED_MARKERS = {
     "mask2former_panoptic_colab": ("**Who this is for.**", "**Predict before running:**", "## 10. Your turn — change one thing: the score threshold"),
-    "mask2former_panoptic_finetune_colab": ("**Who this notebook is for.**", "**Predict:**", "## Change one thing (next experiments)"),
+    "mask2former_panoptic_finetune_colab": ("**Who this notebook is for.**", "**Predict:**", "## 13. Your turn — change one thing: the number of epochs"),
 }
 
 

@@ -95,6 +95,8 @@ FINETUNE_CODE_MARKERS = (
     "adapter = Mask2FormerPanopticPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SHAPE_CLASSES, stuff_names=SHAPE_STUFF, seed=SEED)",
     "baseline = adapter.evaluate(held_out)",
     "trivial = panoptic_quality(trivial_pairs)",
+    "horizon = panoptic_quality(horizon_pairs)",
+    "if adapter.adapted:",
     "run = adapter.finetune(",
     "freeze_backbone=FREEZE_BACKBONE,",
     "adapted = adapter.evaluate(held_out)",
@@ -111,6 +113,9 @@ FINETUNE_CODE_MARKERS = (
     "transformers.__version__",
     "'device': adapter.device",
     "zf.extract(member, target)",
+    "byod_records, byod_classes, byod_stuff = byod_load_dir(archive, root)",
+    "byod_trivial = panoptic_quality(byod_trivial_pairs)",
+    "with open('outputs/mask2former_panoptic_finetune_byod_evaluation_report.json', 'w', encoding='utf-8') as handle:",
 )
 FINETUNE_MARKDOWN_MARKERS = (
     "**Capability:** bounded gradient adaptation",

@@ -29,7 +29,8 @@ its fixes below are unchanged apart from the lock.
 
 - No model or training stage ran. Stand-ins: Section 1 bootstrap; the Section 12 `byod_input` helper on temporary paths
   and a fake upload. Commands and counts as in `mask2former_panoptic_colab_Fixes.md` (one shared test suite: 51 → 68 passed
-  on the first head; 88 passed after the merge onto `main` at `d124c0f`).
+  on the first head; 88 passed after the merge onto `main` at `d124c0f`). The review PR #8 findings (M2F) are fixed on top
+  of this in `docs/reviews/2026-10-02-notebook-review/mask2former_panoptic_finetune_colab_Fixes.md`.
 
 ## Remaining gates
 

@@ -36,8 +36,10 @@ content stands and the sweep's finding is marked superseded below; this PR keeps
 - No model stage ran (no torch here, per the fix brief; the Hub is unreachable). Checkpoint numbers are quoted from `docs/release-verification.md`.
 - Stand-ins: Section 1 bootstrap; the Section 4 BYOD helper on generated images and a fake upload.
 - `build_notebook.py --check` (both templates) OK; `validate_release_assets.py` PASS; `ruff check src tests tools` clean;
-  `pytest` (CI deps without torch): 51 passed → 68 passed on the first head; after the merge onto `main` at `d124c0f`
-  (72 passed + 1 failed on `main` itself in the same torch-less environment), 88 passed.
+  `pytest` (CI deps without torch): 51 passed → 68 passed on the first head; after the merge onto `main` at `d124c0f`,
+  88 passed (`main` itself in the same torch-less environment: 73 collected, 72 passed; `test_identity_constants` failed
+  only because it ran from a secondary worktree while the package was installed from the primary checkout — a path
+  comparison, not a code failure).
 
 ## Remaining gates
 
