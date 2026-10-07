@@ -148,6 +148,18 @@ for the stated runtime, not general estimates.
 | 2026-09-18 | `9498ad0` / `1b0645e8806a` | Kaggle CPU (`kurtvalcorza/dimer-nb2-mask2former-panoptic` v1; image `gcr.io/kaggle-images/python`, Python 3.12.13, image torch 2.10.0+cpu / transformers 5.0.0 / numpy 2.0.2 before the pinned install; executor `runner.py`, nbclient in a fresh `python3` kernel; no repository checkout, clean model cache) | Default sample path: pinned install replaced numpy 2.0.2 → 2.5.3, the notebook's own guard stopped pass 1 at the install cell with a restart instruction (198.5 s) and the executor restarted the kernel and reran from the top (pass 2, 67.1 s); `stage_missing_files` fetched all 4 manifest entries (190 MB) from the Hub at the pinned revision; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cpu`; drawn scene → one `stop sign` 0.601 over 8.3 %, void 91.7 %, `sample-sanity` class-agnostic PQ 0.33; blank → `sky-other-merged` 0.798 (100 %), noise → 0.572 (94.9 %); public photograph digest matched → two `cat` (0.998, 0.997), two `remote` (0.994, 0.953), `couch` 0.811, void 4.9 %, `not-measurable`; 8 outputs written | 265.7 s | **Completed only after a manual restart** — pass 1 failed at the install cell; pass 2 ran 10/10 code cells after the executor restarted the kernel, with results identical to the local pre-flight. Restart-assisted, so it is not a one-pass Run all (RUN1 not met); it covers blob `1b0645e8806a` only, which the isolated-environment notebook (review M2P, 2026-10-06) replaces |
 | 2026-09-18 | `9498ad0` / `baa9ab413435` | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-mask2former-panoptic-finetune` v1, pushed with `--accelerator NvidiaTeslaT4`; T4 15360 MiB, driver 580.159.04; image torch 2.10.0+cu128; same executor, no checkout, clean cache) | Default adaptation path: install pass 181.5 s → restart guard → pass 2 77.1 s; 4 manifest entries staged; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cuda:0`, float32; dataset manifest accepted (24 records, 1 rejection finding); 18/6 split; re-head reported the three expected tensors; baseline PQ 0.0, trivial all-`sky` PQ 0.103; `finetune` 54 steps in 16.2 s (mean epoch loss 33.6 → 6.7); adapted held-out PQ 0.866 (per class sky 0.998, ground 0.999, disc 0.951, box 0.397, triangle 0.986 — the CUDA head initialisation and kernels moved the per-class numbers relative to the CPU pre-flight while the mean stayed within 0.001); new-seed scenes PQ 0.954; `save_artifact` 3 files / 189,996,737 bytes; `load_artifact` reproduced PQ 0.866 exactly with pixel agreement 1.0; tampered manifest refused | 258.6 s | **Completed only after a manual restart** — pass 1 failed at the install cell's restart guard (`cuda-bindings` and `numpy` had been replaced under loaded modules); pass 2 ran 13/13 code cells after the executor restarted the kernel. Restart-assisted, so it is not a one-pass Run all (RUN1 not met; review M2F-M1); it covers blob `baa9ab413435` only, which the isolated-environment notebook (fleet sweep SWP-R, 2026-10-05; review M2F fixes, 2026-10-07) replaces |
 
+### Hosted Colab CLI runs (`TASK-INFERENCE`, isolated environment)
+
+Executor: Colab CLI 0.7.4 sequential execution, fresh Colab Tesla T4 (`colab exec -f` on a new session; the
+notebook fetched byte-exact from GitHub raw content at the full commit SHA and its blob checked before the VM was
+allocated). This is not a browser Run all: forms are not rendered, no execution counts are written (cell order is
+evidenced by `exec.log` "Executing cell k/N"), and the upload/BYOD and activity journeys were not exercised.
+
+| Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
+|---|---|---|---|---|---|
+| 2026-10-06 | `fe62ef4` / `0ae808e38df7` | Colab CLI 0.7.4 sequential execution, fresh Colab Tesla T4 | Default sample path: isolated env built from the 47-package lock; Section 3 model cell raised `ImportError: Mask2FormerLoss requires the scipy library` (the lock had no scipy); later cells failed with consequential `NameError`s | 90.1 s | **FAILED** — 7/13 code cells clean; no restart needed; fixed by locking `scipy==1.18.1` (`cd171da`). Evidence kept outside the repository (relay ledger) |
+| 2026-10-07 | `d124c0f` (merge of PR #7) / `d2aa5071ba92` (`generated_from` = `fe62ef4…`, equal to `NOTEBOOK_SOURCE.repository_revision`) | Colab CLI 0.7.4 sequential execution, fresh Colab Tesla T4 | Default sample path, thresholds 0.5 / 0.8 / 0.5, `USE_BYOD = False`: isolated env (48 locked packages, Python 3.12.12, built in 56 s; kernel Python 3.13.15); torch 2.14.0+cu130 / transformers 4.57.6 on `cuda:0`; `stage_missing_files` fetched all 4 manifest entries (190,138,785 bytes) at `df6b114…`, `verify_snapshot` 4 files; input manifest `accepted` with one rejected threshold probe; drawn scene → one `stop sign` 0.601 over 8.3 %, void 0.917 (segment 2.31 s); blank → `sky-other-merged` 0.798 (100 %), noise → 0.572 (94.9 %); public photograph digest matched → two `cat` (0.998, 0.997), two `remote` (0.994, 0.953), `couch` 0.811, void 0.049, `not-measurable`; `sample-sanity` class-agnostic PQ 0.3304 / SQ 0.9912 / RQ 0.3333 (1 TP, 4 FN); 8 outputs written. Code cells 4–5 (carried modules) print nothing by design | 96.4 s | **PASSED** — 13/13 code cells in one pass, no restart, 0 error outputs; code-cell sources identical to the blob; every number equals the offline check and the 2026-09-18 runs. Evidence: `docs/execution-evidence/2026-10-07/` — `mask2former_panoptic_colab_d124c0f_colab-cli-t4.ipynb` (SHA-256 `282f32f2c769eb1f9ad81d45d3c5671da7c15e016b58f4d52be6b977b2c3bb9c`), `run_summary.json` (`d6a1d4c7a66ffcd0aa76fa23c3ad48b321a897bf36ec69c8d9b149fabbf4a105`), `exec.log` (`83b950747bd471c3ae66aae91b42186c22683af303b13c2b02b9b9098087a25a`) |
+
 ## Current status
 
 **`TASK-INFERENCE` notebook after the M2P review fixes (2026-10-06):** Section 1 now builds an isolated uv
@@ -158,12 +170,16 @@ of grounding-dino-detection-pipeline's T4-passed lock) and routes every later ce
 needed. A Colab T4 run (Colab CLI, 2026-10-06) of the first fix commit `fe62ef4` (blob `0ae808e38df7`) needed no
 restart but **failed** at the Section 3 model cell: transformers 4.57.6 builds `Mask2FormerLoss` inside
 `Mask2FormerForUniversalSegmentation.__init__`, which requires scipy, and that lock had none (the in-kernel
-install had relied on the hosted image's own scipy). scipy is now pinned and locked. **No hosted run of the current
-blob exists yet.** The
+install had relied on the hosted image's own scipy). scipy is now pinned and locked. The next blob
+`d2aa5071ba92` (merge commit `d124c0f`) then **passed** a Colab CLI 0.7.4 sequential execution on a fresh Colab
+Tesla T4 (2026-10-07, 13/13 code cells, one pass, no restart, 0 errors, 96.4 s; see "Hosted Colab CLI runs" above),
+reproducing every default-path number below. The fleet-sweep fixes (generator /2.2: per-lock environment folder
+reused on a re-run, idempotent worker cell, `MPLBACKEND=Agg`) then changed code cells 3, 5 and 7, giving blob
+`408a1aba97eb`, which has no hosted run yet. The
 offline check (Windows workstation CPU, torch 2.13.0+cpu, the kernel cells on their
-`DIMER_NOTEBOOK_CI_PREINSTALLED=1` path, weights pre-staged) reproduced every default-path number below; it is
-not clean-runtime evidence. Remaining gate: one Colab Run all of the new blob in one pass, with one accepted and
-one rejected BYOD input (REL1, REL12).
+`DIMER_NOTEBOOK_CI_PREINSTALLED=1` path, weights pre-staged) also reproduced them; it is
+not clean-runtime evidence. The status stays **Candidate**. Remaining gate: one browser Colab Run all of this blob
+with one accepted and one rejected BYOD input (REL1, REL12); the CLI run exercised the default path only.
 
 **`E2E` notebook after the fleet-sweep and M2F review fixes (2026-10-07):** it shares the inference notebook's
 isolated environment, pins file and 48-package lock (generator /2.2), so no restart should be needed; the Section 7
