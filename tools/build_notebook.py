@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 2.0 §4) from repository sources — /2.1.
+"""Generate a STANDALONE DIMER tutorial notebook (NOTEBOOK_SPEC 2.0 §4) from repository sources — /2.2.
 
 /2 adds to /1: multi-module packages (one tagged cell per module, topologically ordered, package-relative
 imports removed), template-declared rewrite rules, and extra pinned snapshots (`extra_weights`) for packages
 that stage more than one manifest. Single-module templates render as in /1 except for the generator version.
+
+/2.2 (2026-10-05 fleet sweep, SWP-R) refines the /2.1 `isolated_runtime`: the environment folder is keyed on the lock
+digest and a complete environment built from the same lock is reused by a re-run or a second Run all; re-running the
+router cell keeps a live worker (and every variable later cells created) instead of replacing it; `uv` itself runs
+with `MPLBACKEND=Agg` and without `PYTHONPATH`/`PYTHONHOME`/`PYTHONSTARTUP`. It also adds the opt-in template key
+``guided`` (``{'opening': [markdown cells after the header]}``) for a guided layer whose orientation is not part of
+the template's `intro` (NOTEBOOK_SPEC 2.2 GDL1-GDL4).
 
 Usage (from the repository root, or with --repo):
     python tools/build_notebook.py            # write tutorials/<notebook_name>
@@ -27,18 +34,18 @@ import sys
 from pathlib import Path
 from typing import Any
 
-GENERATOR_VERSION = "build_notebook.py/2.1"
-# mask2former-panoptic-pipeline (review M2P, row 43): this file renders two notebooks. A template that opts into none of
-# the /2.1 keys (`isolated_runtime`, `infrastructure_labels`, `collapse_model_cell`) renders byte for byte as /2 did and
-# keeps recording the /2 generator label, so the companion E2E notebook is unchanged until its own review is fixed. The
-# declared specification stays 2.0 for both (the repository validator checks one version for both notebooks).
+GENERATOR_VERSION = "build_notebook.py/2.2"
+# mask2former-panoptic-pipeline (review M2P, row 43; fleet sweep SWP-R): this file renders two notebooks. A template that
+# opts into none of the /2.1+ keys (`isolated_runtime`, `infrastructure_labels`, `collapse_model_cell`, `guided`) renders
+# byte for byte as /2 did and keeps recording the /2 generator label. Both notebooks now opt in. The declared
+# specification stays 2.0 for both (the repository validator checks one version for both notebooks).
 LEGACY_GENERATOR_VERSION = "build_notebook.py/2"
 NOTEBOOK_SPEC = "2.0"
-_V21_KEYS = ("isolated_runtime", "infrastructure_labels", "collapse_model_cell")
+_V21_KEYS = ("isolated_runtime", "infrastructure_labels", "collapse_model_cell", "guided")
 
 
 def generator_version(template: dict[str, Any]) -> str:
-    """The generator label recorded in a notebook: /2.1 when the template uses a /2.1 feature, else /2."""
+    """The generator label recorded in a notebook: /2.2 when the template uses a /2.1+ feature, else /2."""
     return GENERATOR_VERSION if any(template.get(k) for k in _V21_KEYS) else LEGACY_GENERATOR_VERSION
 
 
@@ -127,12 +134,22 @@ LOCKED_PACKAGES = {n_locked}
 LOCK_TEXT = r'''{lock_text}'''
 
 SKIP_INSTALL = os.environ.get("DIMER_NOTEBOOK_CI_PREINSTALLED") == "1"
-ISOLATED_ENV = Path(os.environ.get("DIMER_ISOLATED_ENV", "dimer_isolated_env")).resolve()
+# One environment per lock digest: a re-run of this cell, or a second Run all in the same runtime, reuses a complete
+# environment built from this exact lock instead of rebuilding it; a different lock gets a different folder.
+ISOLATED_ENV = Path(os.environ.get("DIMER_ISOLATED_ENV", "dimer_isolated_env_" + LOCK_SHA256[:12])).resolve()
 ISOLATED_PYTHON = ISOLATED_ENV / "bin" / "python"
 ISOLATED_TOOLS = ISOLATED_ENV.with_name(ISOLATED_ENV.name + "_tools")
+ISOLATED_READY = ISOLATED_ENV / ".dimer-lock-sha256"
+
+
+def _isolated_environment_ready():
+    return ISOLATED_PYTHON.is_file() and ISOLATED_READY.is_file() and ISOLATED_READY.read_text(encoding="utf-8").strip() == LOCK_SHA256
+
 
 if SKIP_INSTALL:
     print("DIMER_NOTEBOOK_CI_PREINSTALLED=1: the pins are already installed; the notebook runs in this kernel.")
+elif _isolated_environment_ready():
+    print({{"isolated_environment": str(ISOLATED_ENV), "reused": True, "lock_sha256": LOCK_SHA256[:16] + "...", "locked_packages": LOCKED_PACKAGES, "kernel_python": platform.python_version()}})
 else:
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeError("This notebook needs a Linux x86_64 runtime (Google Colab, Kaggle or Linux Jupyter): its locked environment is built for manylinux x86_64.")
@@ -158,8 +175,9 @@ else:
         uv = ISOLATED_TOOLS / "uv"
         uv.write_bytes(archive.read(member))
     uv.chmod(0o700)
-    # uv gets no kernel Python path; the managed interpreter is downloaded once and reused on a re-run.
-    uv_env = dict(os.environ)
+    # uv gets no kernel Python path and a non-interactive matplotlib backend; the managed interpreter is downloaded once
+    # and reused on a re-run.
+    uv_env = dict(os.environ, MPLBACKEND="Agg")
     for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"):
         uv_env.pop(name, None)
     if not ISOLATED_PYTHON.is_file():
@@ -167,8 +185,10 @@ else:
     isolated_version = subprocess.run([str(ISOLATED_PYTHON), "-c", "import platform; print(platform.python_version())"], env=uv_env, check=True, capture_output=True, text=True).stdout.strip()
     if isolated_version != MANAGED_PYTHON:
         raise RuntimeError(f"{{ISOLATED_ENV}} holds Python {{isolated_version}}, not {{MANAGED_PYTHON}}: delete that folder (or start a fresh runtime) and run this cell again.")
+    ISOLATED_READY.unlink(missing_ok=True)
     subprocess.run([str(uv), "pip", "install", "--quiet", "--python", str(ISOLATED_PYTHON), "--require-hashes", "--only-binary", ":all:", "--index-url", "https://pypi.org/simple", "-r", str(lock_path)], env=uv_env, check=True)
-    print({{"isolated_environment": str(ISOLATED_ENV), "isolated_python": isolated_version, "kernel_python": platform.python_version(), "locked_packages": LOCKED_PACKAGES, "setup_seconds": round(time.perf_counter() - setup_started)}})"""
+    ISOLATED_READY.write_text(LOCK_SHA256 + "\\n", encoding="utf-8")
+    print({{"isolated_environment": str(ISOLATED_ENV), "reused": False, "isolated_python": isolated_version, "kernel_python": platform.python_version(), "locked_packages": LOCKED_PACKAGES, "setup_seconds": round(time.perf_counter() - setup_started)}})"""
 
 
 _ISOLATED_ROUTER = (
@@ -178,7 +198,7 @@ _ISOLATED_ROUTER = (
     "from multiprocessing.connection import Connection\n\n"
     "# The worker runs in the isolated environment. It executes each routed cell in one persistent namespace and sends\n"
     "# back printed text, displayed objects and matplotlib figures, so every cell behaves as it would in the kernel.\n"
-    + '_WORKER_SOURCE = r"""\nimport ast, base64, builtins, io, linecache, os, signal, sys, traceback, types\nfrom multiprocessing.connection import Connection\n\n_send = Connection(int(sys.argv[1]), readable=False)\n_recv = Connection(int(sys.argv[2]), writable=False)\n\n\nclass _Stream(io.TextIOBase):\n    def __init__(self, name):\n        self._name = name\n\n    @property\n    def encoding(self):\n        return "utf-8"\n\n    def writable(self):\n        return True\n\n    def isatty(self):\n        return False\n\n    def write(self, text):\n        if text:\n            _send.send(("stream", self._name, str(text)))\n        return len(text)\n\n\nsys.stdout, sys.stderr = _Stream("stdout"), _Stream("stderr")\n\n\ndef _figure_bundle(fig):\n    buffer = io.BytesIO()\n    fig.savefig(buffer, format="png", bbox_inches="tight")\n    return {"image/png": base64.b64encode(buffer.getvalue()).decode("ascii"), "text/plain": repr(fig)}\n\n\ndef _flush_figures():\n    plt = sys.modules.get("matplotlib.pyplot")\n    if plt is None:\n        return\n    for number in plt.get_fignums():\n        _send.send(("display", _figure_bundle(plt.figure(number))))\n    plt.close("all")\n\n\ndef _mimebundle(obj):\n    if hasattr(obj, "savefig"):\n        return _figure_bundle(obj)\n    data = {"text/plain": repr(obj)}\n    for method, mime in (("_repr_html_", "text/html"), ("_repr_markdown_", "text/markdown"), ("_repr_png_", "image/png")):\n        render = getattr(obj, method, None)\n        if callable(render):\n            try:\n                value = render()\n            except Exception:\n                value = None\n            if isinstance(value, bytes):\n                value = base64.b64encode(value).decode("ascii")\n            if value is not None:\n                data[mime] = value\n    return data\n\n\ndef display(*objects, **kwargs):\n    for obj in objects:\n        _send.send(("display", _mimebundle(obj)))\n\n\ntry:\n    import matplotlib\n\n    matplotlib.use("Agg")\n    import matplotlib.pyplot\n\n    matplotlib.pyplot.show = lambda *args, **kwargs: _flush_figures()\nexcept ImportError:\n    pass\n\nif os.environ.get("DIMER_KERNEL_IS_COLAB") == "1":\n    # google.colab only exists in the kernel; forward the BYOD upload dialog to it.\n    def _upload():\n        _send.send(("upload",))\n        reply = _recv.recv()\n        if reply[1] is None:\n            raise RuntimeError("The notebook kernel could not open the upload dialog.")\n        return reply[1]\n\n    import importlib.machinery\n\n    def _stub(name, package):\n        # A spec on every stub: importlib.util.find_spec("google.colab") (accelerate does this) raises on a None __spec__.\n        module = types.ModuleType(name)\n        module.__spec__ = importlib.machinery.ModuleSpec(name, None, is_package=package)\n        if package:\n            module.__path__ = []\n        return module\n\n    try:\n        import google\n    except ImportError:\n        google = _stub("google", True)\n        sys.modules["google"] = google\n    _colab = _stub("google.colab", True)\n    _files = _stub("google.colab.files", False)\n    _files.upload = _upload\n    _colab.files = _files\n    google.colab = _colab\n    sys.modules["google.colab"] = _colab\n    sys.modules["google.colab.files"] = _files\n\n_main = types.ModuleType("__main__")\n_main.__dict__.update(__builtins__=builtins, display=display)\nsys.modules["__main__"] = _main\n_count = 0\nwhile True:\n    # An interrupt only lands inside a running cell; between cells it is ignored.\n    signal.signal(signal.SIGINT, signal.SIG_IGN)\n    try:\n        message = _recv.recv()\n    except EOFError:\n        break\n    if message[0] != "run":\n        continue\n    _count += 1\n    filename = f"<isolated cell {_count}>"\n    source = message[1]\n    linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)\n    try:\n        signal.signal(signal.SIGINT, signal.default_int_handler)\n        tree = ast.parse(source, filename)\n        tail = ast.Expression(tree.body.pop().value) if tree.body and isinstance(tree.body[-1], ast.Expr) else None\n        exec(compile(tree, filename, "exec"), _main.__dict__)\n        if tail is not None:\n            value = eval(compile(tail, filename, "eval"), _main.__dict__)\n            if value is not None:\n                display(value)\n        _flush_figures()\n        signal.signal(signal.SIGINT, signal.SIG_IGN)\n        _send.send(("done",))\n    except BaseException as exc:\n        signal.signal(signal.SIGINT, signal.SIG_IGN)\n        frames = exc.__traceback__.tb_next if exc.__traceback__ is not None else None\n        _send.send(("error", "".join(traceback.format_exception(type(exc), exc, frames)), f"{type(exc).__name__}: {exc}"))\n"""\n\n\nclass IsolatedCellError(RuntimeError):\n    """A routed cell raised inside the isolated environment; its traceback is printed above."""\n\n\nclass IsolatedRuntime:\n    """One persistent worker process in the isolated environment, fed one cell at a time."""\n\n    def __init__(self, python, display=None):\n        to_kernel_r, to_kernel_w = os.pipe()\n        to_worker_r, to_worker_w = os.pipe()\n        env = dict(os.environ, MPLBACKEND="Agg", PYTHONUNBUFFERED="1", DIMER_NOTEBOOK_CI_PREINSTALLED="1", HF_HUB_DISABLE_IMPLICIT_TOKEN="1")\n        for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"):\n            env.pop(name, None)\n        env["DIMER_KERNEL_IS_COLAB"] = "1" if "google.colab" in sys.modules else "0"\n        self.proc = subprocess.Popen(\n            [str(python), "-c", _WORKER_SOURCE, str(to_kernel_w), str(to_worker_r)],\n            pass_fds=(to_kernel_w, to_worker_r),\n            env=env,\n            start_new_session=True,  # interrupts reach the worker only through run(), exactly once\n        )\n        os.close(to_kernel_w)\n        os.close(to_worker_r)\n        self._recv = Connection(to_kernel_r, writable=False)\n        self._send = Connection(to_worker_w, readable=False)\n        if display is None:\n            from IPython.display import display\n        self._display = display\n\n    def _exited(self):\n        return RuntimeError(\n            f"The isolated environment\'s Python process exited (code {self.proc.wait()}); a crash of this kind is "\n            "usually running out of memory. Restart the session and choose Run all again."\n        )\n\n    def run(self, source):\n        try:\n            self._send.send(("run", source))\n        except OSError:\n            raise self._exited() from None\n        while True:\n            try:\n                message = self._recv.recv()\n            except EOFError:\n                raise self._exited() from None\n            except KeyboardInterrupt:\n                self.proc.send_signal(signal.SIGINT)\n                continue\n            kind = message[0]\n            if kind == "stream":\n                (sys.stdout if message[1] == "stdout" else sys.stderr).write(message[2])\n            elif kind == "display":\n                self._display(message[1], raw=True)\n            elif kind == "upload":\n                self._send.send(("upload", self._colab_upload()))\n            elif kind == "error":\n                sys.stderr.write(message[1])\n                raise IsolatedCellError(message[2]) from None\n            elif kind == "done":\n                return\n\n    @staticmethod\n    def _colab_upload():\n        try:\n            from google.colab import files\n        except ImportError:\n            return None\n        return files.upload()\n\n    def close(self):\n        self._send.close()\n        self.proc.wait(timeout=30)\n\n\ndef _is_user_cell():\n    # ipykernel transforms a cell before executing it; its caller knows whether this is a silent frontend request.\n    frame = sys._getframe(2)\n    while frame is not None:\n        local = frame.f_locals\n        if "silent" in local and "store_history" in local:\n            return bool(local["store_history"]) and not bool(local["silent"])\n        frame = frame.f_back\n    return True\n\n\ndef _route_to_isolated_runtime(lines):\n    source = "".join(lines)\n    if not source.strip() or "# dimer: kernel cell" in source or not _is_user_cell():\n        return lines\n    return [f"_DIMER_ISOLATED_RUNTIME.run({source!r})\\n"]\n\n\n' +
+    + '_WORKER_SOURCE = r"""\nimport ast, base64, builtins, io, linecache, os, signal, sys, traceback, types\nfrom multiprocessing.connection import Connection\n\n_send = Connection(int(sys.argv[1]), readable=False)\n_recv = Connection(int(sys.argv[2]), writable=False)\n\n\nclass _Stream(io.TextIOBase):\n    def __init__(self, name):\n        self._name = name\n\n    @property\n    def encoding(self):\n        return "utf-8"\n\n    def writable(self):\n        return True\n\n    def isatty(self):\n        return False\n\n    def write(self, text):\n        if text:\n            _send.send(("stream", self._name, str(text)))\n        return len(text)\n\n\nsys.stdout, sys.stderr = _Stream("stdout"), _Stream("stderr")\n\n\ndef _figure_bundle(fig):\n    buffer = io.BytesIO()\n    fig.savefig(buffer, format="png", bbox_inches="tight")\n    return {"image/png": base64.b64encode(buffer.getvalue()).decode("ascii"), "text/plain": repr(fig)}\n\n\ndef _flush_figures():\n    plt = sys.modules.get("matplotlib.pyplot")\n    if plt is None:\n        return\n    for number in plt.get_fignums():\n        _send.send(("display", _figure_bundle(plt.figure(number))))\n    plt.close("all")\n\n\ndef _mimebundle(obj):\n    if hasattr(obj, "savefig"):\n        return _figure_bundle(obj)\n    data = {"text/plain": repr(obj)}\n    for method, mime in (("_repr_html_", "text/html"), ("_repr_markdown_", "text/markdown"), ("_repr_png_", "image/png")):\n        render = getattr(obj, method, None)\n        if callable(render):\n            try:\n                value = render()\n            except Exception:\n                value = None\n            if isinstance(value, bytes):\n                value = base64.b64encode(value).decode("ascii")\n            if value is not None:\n                data[mime] = value\n    return data\n\n\ndef display(*objects, **kwargs):\n    for obj in objects:\n        _send.send(("display", _mimebundle(obj)))\n\n\ntry:\n    import matplotlib\n\n    matplotlib.use("Agg")\n    import matplotlib.pyplot\n\n    matplotlib.pyplot.show = lambda *args, **kwargs: _flush_figures()\nexcept ImportError:\n    pass\n\nif os.environ.get("DIMER_KERNEL_IS_COLAB") == "1":\n    # google.colab only exists in the kernel; forward the BYOD upload dialog to it.\n    def _upload():\n        _send.send(("upload",))\n        reply = _recv.recv()\n        if reply[1] is None:\n            raise RuntimeError("The notebook kernel could not open the upload dialog.")\n        return reply[1]\n\n    import importlib.machinery\n\n    def _stub(name, package):\n        # A spec on every stub: importlib.util.find_spec("google.colab") (accelerate does this) raises on a None __spec__.\n        module = types.ModuleType(name)\n        module.__spec__ = importlib.machinery.ModuleSpec(name, None, is_package=package)\n        if package:\n            module.__path__ = []\n        return module\n\n    try:\n        import google\n    except ImportError:\n        google = _stub("google", True)\n        sys.modules["google"] = google\n    _colab = _stub("google.colab", True)\n    _files = _stub("google.colab.files", False)\n    _files.upload = _upload\n    _colab.files = _files\n    google.colab = _colab\n    sys.modules["google.colab"] = _colab\n    sys.modules["google.colab.files"] = _files\n\n_main = types.ModuleType("__main__")\n_main.__dict__.update(__builtins__=builtins, display=display)\nsys.modules["__main__"] = _main\n_count = 0\nwhile True:\n    # An interrupt only lands inside a running cell; between cells it is ignored.\n    signal.signal(signal.SIGINT, signal.SIG_IGN)\n    try:\n        message = _recv.recv()\n    except EOFError:\n        break\n    if message[0] != "run":\n        continue\n    _count += 1\n    filename = f"<isolated cell {_count}>"\n    source = message[1]\n    linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)\n    try:\n        signal.signal(signal.SIGINT, signal.default_int_handler)\n        tree = ast.parse(source, filename)\n        tail = ast.Expression(tree.body.pop().value) if tree.body and isinstance(tree.body[-1], ast.Expr) else None\n        exec(compile(tree, filename, "exec"), _main.__dict__)\n        if tail is not None:\n            value = eval(compile(tail, filename, "eval"), _main.__dict__)\n            if value is not None:\n                display(value)\n        _flush_figures()\n        signal.signal(signal.SIGINT, signal.SIG_IGN)\n        _send.send(("done",))\n    except BaseException as exc:\n        signal.signal(signal.SIGINT, signal.SIG_IGN)\n        frames = exc.__traceback__.tb_next if exc.__traceback__ is not None else None\n        _send.send(("error", "".join(traceback.format_exception(type(exc), exc, frames)), f"{type(exc).__name__}: {exc}"))\n"""\n\n\nclass IsolatedCellError(RuntimeError):\n    """A routed cell raised inside the isolated environment; its traceback is printed above."""\n\n\nclass IsolatedRuntime:\n    """One persistent worker process in the isolated environment, fed one cell at a time."""\n\n    def __init__(self, python, display=None):\n        self.python = str(python)\n        to_kernel_r, to_kernel_w = os.pipe()\n        to_worker_r, to_worker_w = os.pipe()\n        env = dict(os.environ, MPLBACKEND="Agg", PYTHONUNBUFFERED="1", DIMER_NOTEBOOK_CI_PREINSTALLED="1", HF_HUB_DISABLE_IMPLICIT_TOKEN="1")\n        for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"):\n            env.pop(name, None)\n        env["DIMER_KERNEL_IS_COLAB"] = "1" if "google.colab" in sys.modules else "0"\n        self.proc = subprocess.Popen(\n            [str(python), "-c", _WORKER_SOURCE, str(to_kernel_w), str(to_worker_r)],\n            pass_fds=(to_kernel_w, to_worker_r),\n            env=env,\n            start_new_session=True,  # interrupts reach the worker only through run(), exactly once\n        )\n        os.close(to_kernel_w)\n        os.close(to_worker_r)\n        self._recv = Connection(to_kernel_r, writable=False)\n        self._send = Connection(to_worker_w, readable=False)\n        if display is None:\n            from IPython.display import display\n        self._display = display\n\n    def alive(self):\n        return self.proc.poll() is None\n\n    def _exited(self):\n        return RuntimeError(\n            f"The isolated environment\'s Python process exited (code {self.proc.wait()}); a crash of this kind is "\n            "usually running out of memory. Restart the session and choose Run all again."\n        )\n\n    def run(self, source):\n        try:\n            self._send.send(("run", source))\n        except OSError:\n            raise self._exited() from None\n        while True:\n            try:\n                message = self._recv.recv()\n            except EOFError:\n                raise self._exited() from None\n            except KeyboardInterrupt:\n                self.proc.send_signal(signal.SIGINT)\n                continue\n            kind = message[0]\n            if kind == "stream":\n                (sys.stdout if message[1] == "stdout" else sys.stderr).write(message[2])\n            elif kind == "display":\n                self._display(message[1], raw=True)\n            elif kind == "upload":\n                self._send.send(("upload", self._colab_upload()))\n            elif kind == "error":\n                sys.stderr.write(message[1])\n                raise IsolatedCellError(message[2]) from None\n            elif kind == "done":\n                return\n\n    @staticmethod\n    def _colab_upload():\n        try:\n            from google.colab import files\n        except ImportError:\n            return None\n        return files.upload()\n\n    def close(self):\n        self._send.close()\n        self.proc.wait(timeout=30)\n\n\ndef _is_user_cell():\n    # ipykernel transforms a cell before executing it; its caller knows whether this is a silent frontend request.\n    frame = sys._getframe(2)\n    while frame is not None:\n        local = frame.f_locals\n        if "silent" in local and "store_history" in local:\n            return bool(local["store_history"]) and not bool(local["silent"])\n        frame = frame.f_back\n    return True\n\n\ndef _route_to_isolated_runtime(lines):\n    source = "".join(lines)\n    if not source.strip() or "# dimer: kernel cell" in source or not _is_user_cell():\n        return lines\n    return [f"_DIMER_ISOLATED_RUNTIME.run({source!r})\\n"]\n\n\n' +
     "if SKIP_INSTALL:\n"
     "    print(\"Routing disabled: the notebook runs in this kernel.\")\n"
     "else:\n"
@@ -187,11 +207,19 @@ _ISOLATED_ROUTER = (
     "    _ip.input_transformers_cleanup[:] = [\n"
     "        t for t in _ip.input_transformers_cleanup if getattr(t, \"__name__\", \"\") != \"_route_to_isolated_runtime\"\n"
     "    ]\n"
-    "    if isinstance(globals().get(\"_DIMER_ISOLATED_RUNTIME\"), IsolatedRuntime):\n"
-    "        _DIMER_ISOLATED_RUNTIME.close()\n"
-    "    _DIMER_ISOLATED_RUNTIME = IsolatedRuntime(ISOLATED_PYTHON)\n"
+    "    # Idempotent: a live worker on this environment is kept, with every variable the later cells created, so\n"
+    "    # re-running this cell alone never strands the cells after it. A dead or different worker is replaced.\n"
+    "    _previous = globals().get(\"_DIMER_ISOLATED_RUNTIME\")\n"
+    "    # (Duck-typed: re-running this cell redefines IsolatedRuntime, so isinstance would never match the old worker.)\n"
+    "    _reuse = getattr(_previous, \"python\", None) == str(ISOLATED_PYTHON) and _previous.alive()\n"
+    "    if _reuse:\n"
+    "        _DIMER_ISOLATED_RUNTIME = _previous\n"
+    "    else:\n"
+    "        if getattr(_previous, \"python\", None) is not None and _previous.alive():\n"
+    "            _previous.close()\n"
+    "        _DIMER_ISOLATED_RUNTIME = IsolatedRuntime(ISOLATED_PYTHON)\n"
     "    _ip.input_transformers_cleanup.append(_route_to_isolated_runtime)\n"
-    "    print(f\"Every later code cell now runs in {ISOLATED_PYTHON} (pid {_DIMER_ISOLATED_RUNTIME.proc.pid}).\")"
+    "    print({\"routed_to\": str(ISOLATED_PYTHON), \"worker_pid\": _DIMER_ISOLATED_RUNTIME.proc.pid, \"worker_reused\": _reuse})"
 )
 
 
@@ -244,6 +272,7 @@ def template_contract() -> dict[str, str]:
         "lock": "OPTIONAL (required with isolated_runtime): repository-relative hash-locked requirements compiled from the pyproject pins",
         "infrastructure_labels": "OPTIONAL bool (default False): label Sections 1-3 as Infrastructure and collapse the carried-module source (NOTEBOOK_SPEC 2.2 GDL11)",
         "collapse_model_cell": "OPTIONAL bool (default False; needs infrastructure_labels): also title the Section 3 pin/stage/verify cell `# @title Infrastructure: ...` and collapse it (cellView: form)",
+        "guided": "OPTIONAL {'opening': [markdown cells inserted after the header, before Prerequisites]} for a guided layer whose orientation is not written into `intro` (NOTEBOOK_SPEC 2.2 GDL1-GDL4)",
         "model_host": "OPTIONAL {name, reference_url, revision_label} for a non-Hub checkpoint host (default: Hugging Face Hub, https://huggingface.co/<MODEL_ID>, 'revision'); the package's own stage_missing_files downloader must fetch from it",
         "external_access_extra": "OPTIONAL clause naming one more documented upstream host the default path reads public sample data from (ST6), e.g. 'and images.cocodataset.org (Section 7) for one digest-pinned public photograph'; the External access bullet then names both hosts",
     }
@@ -410,18 +439,26 @@ def _pins(repo: Path, template: dict[str, Any] | None = None) -> list[str]:
     return resolved
 
 
+def _canonical(name: str) -> str:
+    """PEP 503 normalised distribution name."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def lock_packages(lock_text: str) -> dict[str, str]:
-    """`{name: version}` of every requirement in a uv/pip-compile hash lock."""
-    return {m.group(1).lower(): m.group(2) for m in re.finditer(r"^([A-Za-z0-9._-]+)==([^\s\\]+)", lock_text, re.M)}
+    """`{name: version}` of every requirement in a uv/pip-compile hash lock (PEP 503 names)."""
+    return {_canonical(m.group(1)): m.group(2) for m in re.finditer(r"^([A-Za-z0-9._-]+)==([^\s\\]+)", lock_text, re.M)}
 
 
 def check_lock(pins: list[str], lock_text: str) -> None:
     """Every direct pin must appear in the lock at the same version, and every lock entry must carry a hash."""
     locked = lock_packages(lock_text)
     for pin in pins:
+        if pin.startswith("--") or "==" not in pin:
+            raise SystemExit(f"isolated_runtime supports `name==version` pins only, found {pin!r}")
         name, version = pin.split("==", 1)
-        if locked.get(name.lower()) != version:
-            raise SystemExit(f"lock does not pin {pin} (found {locked.get(name.lower())}); recompile the lock")
+        name = re.split(r"[\[;\s]", name, maxsplit=1)[0]
+        if locked.get(_canonical(name)) != version.strip():
+            raise SystemExit(f"lock does not pin {pin} (found {locked.get(_canonical(name))}); recompile the lock")
     blocks = re.split(r"\n(?=[A-Za-z0-9])", lock_text.split("\n", 2)[-1])
     unhashed = [b.split("==", 1)[0] for b in blocks if "==" in b and "--hash=sha256:" not in b]
     if unhashed:
@@ -670,6 +707,8 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
         f"**This notebook does not demonstrate:** {template['exclusions'].strip()}"
     )
     add(_md(header))
+    for opening in (template.get("guided") or {}).get("opening", []):
+        add(_md(opening.format(**fmt)))
 
     isolated_access = (
         f" The isolated environment also needs PyPI (`pypi.org`, `files.pythonhosted.org`) for the pinned `uv` wheel and the "
@@ -696,10 +735,10 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
             _md(
                 "## 1. Install the pinned runtime (isolated environment)\n\n"
                 + infra
-                + "Hosted runtimes such as Colab import some packages, NumPy among them, before the first cell runs, and "
-                "Python cannot swap a module that is already loaded. Installing the pins into the notebook's own Python "
-                "would therefore leave mixed versions or require a manual restart. Instead, the next cell builds a separate "
-                f"environment (`dimer_isolated_env/`) and leaves the kernel's packages untouched: it downloads the pinned `uv` "
+                + "Hosted runtimes such as Colab and Kaggle import some packages, NumPy and often PyTorch among them, before the "
+                "first cell runs, and Python cannot swap a module that is already loaded. Installing the pins into the notebook's "
+                "own Python would therefore leave mixed versions or require a manual restart. Instead, the next cell builds a separate "
+                f"environment (`dimer_isolated_env_<lock digest>/`) and leaves the kernel's packages untouched: it downloads the pinned `uv` "
                 f"{template['uv']['version']} wheel and refuses it unless its size and SHA-256 match, has `uv` install the managed "
                 f"CPython **{template['managed_python']}** (whatever Python the kernel itself runs), and installs the "
                 f"{len(lock_packages(ctx['lock_text']))} packages of the carried hash-locked requirements "
@@ -707,7 +746,8 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
                 "package, direct or transitive, is the exact file that was locked. No repository code is installed. The lock "
                 "holds manylinux x86_64 wheels, so the notebook supports **Linux x86_64 runtimes only** (Google Colab, Kaggle "
                 "or Linux Jupyter); on any other platform the cell stops with that message. The printed dictionary names the "
-                "isolated Python version and the kernel's."
+                "isolated Python version and the kernel's. The cell is safe to re-run: a complete environment built from this "
+                "exact lock is reused rather than rebuilt (`'reused': True`), and `DIMER_ISOLATED_ENV` can name another folder."
             )
         )
         add(_code(_isolated_install(ctx, template, pins_literal), {"cellView": "form", **hidden}))
@@ -717,7 +757,8 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
                 "Printed output comes back to the notebook as usual, variables persist from cell to cell, and an error "
                 "stops **Run all** as it would in the kernel. These two cells are marked `# dimer: kernel cell` and are "
                 "the only cells that run in the kernel. If you re-run a single cell later, it still runs in the isolated "
-                "environment with the variables created so far; to start over, restart the session and choose **Run all**. "
+                "environment with the variables created so far, and re-running this cell keeps the live worker and those "
+                "variables rather than replacing them; to start over, restart the session and choose **Run all**. "
                 "`DIMER_NOTEBOOK_CI_PREINSTALLED=1` lets an executor that has already installed exactly these pins run "
                 "every cell in its own kernel instead."
             )
@@ -858,6 +899,7 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
                 "notebook_mode": mode,
                 "notebook_spec": NOTEBOOK_SPEC,
                 "standalone": True,
+                **({"environment": "isolated hash-locked uv environment; nothing installed into the kernel"} if template.get("isolated_runtime") else {}),
                 "generated_from": {
                     "repository": template["repo_name"],
                     "revision": ctx["module_revision"],

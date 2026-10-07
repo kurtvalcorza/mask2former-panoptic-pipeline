@@ -5,7 +5,7 @@ modules, and the model pin/stage/verify cells are produced by the generator from
 sources so they cannot drift from the package.
 
 Review fixes (Notebook Review Framework v1, review PR #7, M2P-M1..M2 / M2P-m1..m5): the runtime is the fleet's uv
-isolated environment (generator /2.1, no in-kernel install, no restart; lock compiled from the pyproject pins plus scipy and
+isolated environment (generator /2.1, refined to /2.2 by the fleet-sweep fixes; no in-kernel install, no restart; lock compiled from the pyproject pins plus scipy and
 constrained to florence2-vision-language-pipeline's T4-passed lock); the guided layer (audience, input/output
 contract, how to use, roadmap, predictions, worked answers, a change-one-thing activity in Section 10,
 troubleshooting, glossary, conclusion) is added and Sections 1-3 are labelled and collapsed as Infrastructure;

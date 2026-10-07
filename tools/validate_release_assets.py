@@ -95,6 +95,8 @@ FINETUNE_CODE_MARKERS = (
     "adapter = Mask2FormerPanopticPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SHAPE_CLASSES, stuff_names=SHAPE_STUFF, seed=SEED)",
     "baseline = adapter.evaluate(held_out)",
     "trivial = panoptic_quality(trivial_pairs)",
+    "horizon = panoptic_quality(horizon_pairs)",
+    "if adapter.adapted:",
     "run = adapter.finetune(",
     "freeze_backbone=FREEZE_BACKBONE,",
     "adapted = adapter.evaluate(held_out)",
@@ -111,6 +113,9 @@ FINETUNE_CODE_MARKERS = (
     "transformers.__version__",
     "'device': adapter.device",
     "zf.extract(member, target)",
+    "byod_records, byod_classes, byod_stuff = byod_load_dir(archive, root)",
+    "byod_trivial = panoptic_quality(byod_trivial_pairs)",
+    "with open('outputs/mask2former_panoptic_finetune_byod_evaluation_report.json', 'w', encoding='utf-8') as handle:",
 )
 FINETUNE_MARKDOWN_MARKERS = (
     "**Capability:** bounded gradient adaptation",
@@ -669,7 +674,8 @@ def _validate_parity(
 
 
 def _validate_bootstrap_guard(path: Path, code_cells: list[tuple[int, str, ast.Module]]) -> None:
-    """The stale-import guard must actually raise: `if stale:` whose body raises RuntimeError."""
+    """The stale-import guard must actually raise: `if stale:` whose body raises RuntimeError. (With `isolated_runtime`
+    the guard is carried but skipped: the worker sets DIMER_NOTEBOOK_CI_PREINSTALLED=1, so nothing is pip-installed.)"""
     raises = False
     for _, _, tree in code_cells:
         for node in ast.walk(tree):
@@ -685,9 +691,10 @@ def _validate_bootstrap_guard(path: Path, code_cells: list[tuple[int, str, ast.M
 def _validate_isolated_runtime(
     path: Path, code_cells: list[tuple[int, str, ast.Module]], markdown: str, template: dict
 ) -> None:
-    """RUN1/RUN10/ENV6 (review M2P-M1): with `isolated_runtime` the notebook installs nothing into its own kernel.
-    Exactly two kernel cells (build the hash-locked uv environment, route later cells to it) come first, the
-    carried lock matches its digest and the repository lock, and no learner-facing text asks for a restart."""
+    """RUN1/RUN10/ENV6 (review M2P-M1; fleet sweep SWP-R): with `isolated_runtime` the notebook installs nothing into
+    its own kernel. Exactly two kernel cells (build or reuse the hash-locked uv environment, route later cells to it)
+    come first, the carried lock matches its digest and the repository lock, the kernel cells never pip-install, and
+    no learner-facing text asks for a restart."""
     kernel = [(index, source) for index, source, _ in code_cells if "# dimer: kernel cell" in source]
     if not template.get("isolated_runtime"):
         _check(not kernel, f"{path.name}: kernel cells without isolated_runtime in its template")
@@ -702,6 +709,8 @@ def _validate_isolated_runtime(
     _check(lock is not None and digest is not None, f"{path.name}: the install cell must carry LOCK_TEXT and LOCK_SHA256")
     _check(hashlib.sha256(lock.group(1).encode("utf-8")).hexdigest() == digest.group(1), f"{path.name}: LOCK_TEXT does not match LOCK_SHA256")
     _check(lock.group(1) == _read(ROOT / template["lock"]), f"{path.name}: the carried lock differs from {template['lock']}")
+    _check("_isolated_environment_ready()" in install, f"{path.name}: the install cell must reuse a matching isolated environment (SWP-R)")
+    _check("pip install" not in install and "'-m', 'pip'" not in install, f"{path.name}: the kernel cells must not pip-install into the kernel (RUN10)")
     _check("_ip.input_transformers_cleanup.append(_route_to_isolated_runtime)" in router, f"{path.name}: the second kernel cell must route later cells")
     _check("Restart the runtime" not in markdown, f"{path.name}: learner-facing text must not ask for a restart (RUN1)")
 
@@ -717,7 +726,10 @@ def _validate_notebook_content(
     model_id, _revision = _package_identity(template)
     stripped = {index: _strip_comments(source) for index, source, _ in code_cells}
     code = "\n".join(stripped.values())
-    outside = "\n".join(text for index, text in stripped.items() if index not in embedded)
+    # The isolated-runtime kernel cells ('# dimer: kernel cell', checked by _validate_isolated_runtime) download the
+    # pinned uv wheel and run uv; they are infrastructure, not model logic, so G2 does not apply to them.
+    kernel = {index for index, source, _ in code_cells if "# dimer: kernel cell" in source}
+    outside = "\n".join(text for index, text in stripped.items() if index not in embedded and index not in kernel)
     missing = [marker for marker in COMMON_CODE_MARKERS + spec["code_markers"] if marker not in code]
     _check(not missing, f"{path.name}: missing required source markers: {missing}")
     present = [

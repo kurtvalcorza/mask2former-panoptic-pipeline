@@ -1,8 +1,8 @@
-# Runtime pins of tutorials/mask2former_panoptic_colab.ipynb (its inline PINS and the input of requirements-colab.lock.txt).
+# Runtime pins of both tutorial notebooks (their inline PINS and the input of the shared requirements-colab.lock.txt).
 # The pyproject.toml runtime pins, plus scipy: transformers 4.57.6 builds Mask2FormerLoss inside
 # Mask2FormerForUniversalSegmentation.__init__ even for inference, and that class calls requires_backends(["scipy"])
 # (Colab T4 run of fe62ef4 failed there; review fix row 43). tests/test_mask2former_panoptic_review_fixes.py keeps this
-# file equal to the pyproject pins plus scipy. The E2E notebook still carries the pyproject pins unchanged.
+# file equal to the pyproject pins plus scipy. The E2E notebook builds the same model class, so it shares this file.
 torch==2.14.0
 torchvision==0.29.0
 torchaudio==2.11.0

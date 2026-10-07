@@ -62,7 +62,8 @@ def test_par1_embedded_modules_equal_repository_modules(notebook: dict) -> None:
         rel = f"{ctx['pkg_rel']}/{module}"
         assert cell["metadata"]["dimer"]["module_sha256"] == ctx["per_module_sha256"][rel]
         drifted = f"embedded module cell for {rel} drifted from the package; regenerate the notebook"
-        assert _source(cell).rstrip("\n") + "\n" == ctx["embedded"][module], drifted
+        # Generator /2.1+ `infrastructure_labels`: one Colab title line precedes the module text (strip_carried_title).
+        assert build.strip_carried_title(_source(cell)).rstrip("\n") + "\n" == ctx["embedded"][module], drifted
 
 
 REWRITES = TEMPLATE.get("rewrites", build.REWRITES)  # a template may declare its own rules (generator /2)
@@ -160,7 +161,7 @@ def test_both_notebooks_share_the_package_and_the_pins() -> None:
     """The two templates carry the same modules and the same pyproject pins (ENV2): one runtime, two profiles."""
     primary = _load("notebook_template").TEMPLATE
     assert primary["modules"] == TEMPLATE["modules"] == ["samples.py", "pipeline.py"]
-    # The inference notebook's pins file adds scipy (Mask2FormerLoss needs it at construction; review fix row 43); the
-    # E2E notebook still carries the pyproject pins until its own isolated-environment fix.
-    assert build._pins(ROOT, primary) == build._pins(ROOT, TEMPLATE) + ["scipy==1.18.1"]
+    # Both pins files are tutorials/requirements-colab.in: the pyproject pins plus scipy (Mask2FormerLoss needs it at
+    # construction; review fix row 43). One shared lock serves both isolated environments.
+    assert build._pins(ROOT, primary) == build._pins(ROOT, TEMPLATE) == build._pins(ROOT) + ["scipy==1.18.1"]
     assert primary["weights_key"] == TEMPLATE["weights_key"]

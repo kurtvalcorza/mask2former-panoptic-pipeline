@@ -132,7 +132,8 @@ def test_pins_file_is_the_pyproject_pins_plus_scipy():
     template = _load_tool("notebook_template").TEMPLATE
     assert template["pins_file"] == "tutorials/requirements-colab.in"
     assert build._pins(ROOT, template) == build._pins(ROOT) + ["scipy==1.18.1"]
-    assert build._pins(ROOT, _load_tool("notebook_template_finetune").TEMPLATE) == build._pins(ROOT)  # E2E unchanged
+    # The E2E notebook shares the pins file and the lock (fleet sweep SWP-R): it builds the same model class.
+    assert build._pins(ROOT, _load_tool("notebook_template_finetune").TEMPLATE) == build._pins(ROOT, template)
 
 
 def test_lock_covers_every_backend_the_model_classes_require():
@@ -154,12 +155,14 @@ def test_lock_covers_every_backend_the_model_classes_require():
     assert locked["scipy"] == "1.18.1"
 
 
-def test_the_companion_e2e_notebook_still_renders_as_generator_2():
+def test_both_notebooks_render_with_the_isolated_runtime_generator():
+    """Superseded in part: the E2E notebook adopted the isolated runtime in the fleet-sweep fixes (SWP-R), so both
+    templates now record the same generator label and both start with the two kernel cells."""
     build = _load_tool("build_notebook")
     finetune = _load_tool("notebook_template_finetune").TEMPLATE
-    assert build.generator_version(finetune) == "build_notebook.py/2"
-    assert build.generator_version(_load_tool("notebook_template").TEMPLATE) == "build_notebook.py/2.1"
-    assert not any("# dimer: kernel cell" in src for src in _code(FINETUNE_NOTEBOOK))
+    assert build.generator_version(finetune) == build.generator_version(_load_tool("notebook_template").TEMPLATE) == "build_notebook.py/2.2"
+    assert build.generator_version({}) == "build_notebook.py/2"  # a template that opts into nothing still renders as /2
+    assert [i for i, src in enumerate(_code(FINETUNE_NOTEBOOK)) if "# dimer: kernel cell" in src] == [0, 1]
 
 
 @pytest.mark.parametrize("real_google", [False, True])
