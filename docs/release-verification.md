@@ -23,8 +23,12 @@ CI runs `tools/validate_release_assets.py`, which checks:
   `src/mask2former_panoptic_pipeline/samples.py` and `pipeline.py` after the generator's documented
   rewrites, in dependency order; the inline `MANIFEST` equal to the committed snapshot manifest and
   the inline `PINS` equal to the `pyproject.toml` runtime pins; each notebook byte-identical (on LF)
-  to `tools/build_notebook.py` output for its recorded revision; the pinned-install cell with its
-  restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded in exports;
+  to `tools/build_notebook.py` output for its recorded revision; for the `TASK-INFERENCE` notebook
+  (generator /2.1 `isolated_runtime`) exactly two leading kernel cells that build a hash-locked uv
+  environment from `tutorials/requirements-colab.lock.txt` (carried lock equal to the file and to its
+  SHA-256) and route every later cell to it, with no learner-facing restart instruction; for the `E2E`
+  notebook the pinned-install cell with its restart-on-stale-import guard; `NOTEBOOK_SOURCE` recorded
+  in exports;
 - `MODEL_ID`/`MODEL_REVISION` are bound only in the carried module cell (and repeated in the inline
   manifest, which the notebook asserts against the module before fetching), the revision is a 40-hex
   immutable commit, and the same identity string appears in `README.md`, `MODEL_CARD.md`, and
@@ -142,15 +146,30 @@ for the stated runtime, not general estimates.
 
 | Date (UTC) | Commit / notebook blob | Executor | Path exercised | Wall | Outcome |
 |---|---|---|---|---|---|
-| 2026-09-18 | `9498ad0` / `1b0645e8806a` | Kaggle CPU (`kurtvalcorza/dimer-nb2-mask2former-panoptic` v1; image `gcr.io/kaggle-images/python`, Python 3.12.13, image torch 2.10.0+cpu / transformers 5.0.0 / numpy 2.0.2 before the pinned install; executor `runner.py`, nbclient in a fresh `python3` kernel; no repository checkout, clean model cache) | Default sample path: pinned install replaced numpy 2.0.2 → 2.5.3, the notebook's own guard raised `Restart the runtime, then rerun from the top` (pass 1, 198.5 s) and the executor restarted and reran from the top (pass 2, 67.1 s); `stage_missing_files` fetched all 4 manifest entries (190 MB) from the Hub at the pinned revision; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cpu`; drawn scene → one `stop sign` 0.601 over 8.3 %, void 91.7 %, `sample-sanity` class-agnostic PQ 0.33; blank → `sky-other-merged` 0.798 (100 %), noise → 0.572 (94.9 %); public photograph digest matched → two `cat` (0.998, 0.997), two `remote` (0.994, 0.953), `couch` 0.811, void 4.9 %, `not-measurable`; 8 outputs written | 265.7 s | **PASSED** — 10/10 ok code cells (1 restart after the install cell), results identical to the local pre-flight; REL1/REL8 satisfied for this blob |
+| 2026-09-18 | `9498ad0` / `1b0645e8806a` | Kaggle CPU (`kurtvalcorza/dimer-nb2-mask2former-panoptic` v1; image `gcr.io/kaggle-images/python`, Python 3.12.13, image torch 2.10.0+cpu / transformers 5.0.0 / numpy 2.0.2 before the pinned install; executor `runner.py`, nbclient in a fresh `python3` kernel; no repository checkout, clean model cache) | Default sample path: pinned install replaced numpy 2.0.2 → 2.5.3, the notebook's own guard stopped pass 1 at the install cell with a restart instruction (198.5 s) and the executor restarted the kernel and reran from the top (pass 2, 67.1 s); `stage_missing_files` fetched all 4 manifest entries (190 MB) from the Hub at the pinned revision; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cpu`; drawn scene → one `stop sign` 0.601 over 8.3 %, void 91.7 %, `sample-sanity` class-agnostic PQ 0.33; blank → `sky-other-merged` 0.798 (100 %), noise → 0.572 (94.9 %); public photograph digest matched → two `cat` (0.998, 0.997), two `remote` (0.994, 0.953), `couch` 0.811, void 4.9 %, `not-measurable`; 8 outputs written | 265.7 s | **Completed only after a manual restart** — pass 1 failed at the install cell; pass 2 ran 10/10 code cells after the executor restarted the kernel, with results identical to the local pre-flight. Restart-assisted, so it is not a one-pass Run all (RUN1 not met); it covers blob `1b0645e8806a` only, which the isolated-environment notebook (review M2P, 2026-10-06) replaces |
 | 2026-09-18 | `9498ad0` / `baa9ab413435` | Kaggle Tesla T4 (`kurtvalcorza/dimer-nb2-mask2former-panoptic-finetune` v1, pushed with `--accelerator NvidiaTeslaT4`; T4 15360 MiB, driver 580.159.04; image torch 2.10.0+cu128; same executor, no checkout, clean cache) | Default adaptation path: install pass 181.5 s → restart guard → pass 2 77.1 s; 4 manifest entries staged; runtime torch 2.14.0+cu130 / transformers 4.57.6 on `cuda:0`, float32; dataset manifest accepted (24 records, 1 rejection finding); 18/6 split; re-head reported the three expected tensors; baseline PQ 0.0, trivial all-`sky` PQ 0.103; `finetune` 54 steps in 16.2 s (mean epoch loss 33.6 → 6.7); adapted held-out PQ 0.866 (per class sky 0.998, ground 0.999, disc 0.951, box 0.397, triangle 0.986 — the CUDA head initialisation and kernels moved the per-class numbers relative to the CPU pre-flight while the mean stayed within 0.001); new-seed scenes PQ 0.954; `save_artifact` 3 files / 189,996,737 bytes; `load_artifact` reproduced PQ 0.866 exactly with pixel agreement 1.0; tampered manifest refused | 258.6 s | **PASSED** — 13/13 ok code cells (1 restart after the install cell); REL1/REL8 satisfied for this blob |
 
 ## Current status
 
+**`TASK-INFERENCE` notebook after the M2P review fixes (2026-10-06):** Section 1 now builds an isolated uv
+environment from the hash-locked `tutorials/requirements-colab.lock.txt` (48 packages compiled from
+`tutorials/requirements-colab.in`, the `pyproject.toml` pins plus `scipy==1.18.1`; the same versions and hashes as
+florence2-vision-language-pipeline's lock, which passed a Colab T4 Run all, minus `pyarrow`, plus the scipy wheel
+of grounding-dino-detection-pipeline's T4-passed lock) and routes every later cell to it, so no restart should be
+needed. A Colab T4 run (Colab CLI, 2026-10-06) of the first fix commit `fe62ef4` (blob `0ae808e38df7`) needed no
+restart but **failed** at the Section 3 model cell: transformers 4.57.6 builds `Mask2FormerLoss` inside
+`Mask2FormerForUniversalSegmentation.__init__`, which requires scipy, and that lock had none (the in-kernel
+install had relied on the hosted image's own scipy). scipy is now pinned and locked. **No hosted run of the current
+blob exists yet.** The
+offline check (Windows workstation CPU, torch 2.13.0+cpu, the kernel cells on their
+`DIMER_NOTEBOOK_CI_PREINSTALLED=1` path, weights pre-staged) reproduced every default-path number below; it is
+not clean-runtime evidence. Remaining gate: one Colab Run all of the new blob in one pass, with one accepted and
+one rejected BYOD input (REL1, REL12).
+
 Clean-runtime execution in a **supported** runtime is now recorded for both notebooks (table above): the
 committed blobs `1b0645e8806a` (Kaggle CPU, 265.7 s) and `baa9ab413435` (Kaggle Tesla T4, 258.6 s)
-ran top-to-bottom from GitHub raw content with no repository checkout and a clean model cache, through
-the notebooks' own restart guard, with every default-path stage, export, the artifact round-trip and the
+ran top-to-bottom from GitHub raw content with no repository checkout and a clean model cache, but only
+after a manual restart (each first pass stopped at the install cell's restart guard), with every default-path stage, export, the artifact round-trip and the
 tampered-artifact refusal observed. The evidence (executor `run_summary.json`, both executed notebook
 passes, the `outputs/` directory) is kept under `Projects/.agent/backups/kaggle-m2f-2026-09-18/out/`
 with its `LEDGER.md`. The registry status stays **Candidate** until a reviewer confirms these records
