@@ -196,7 +196,10 @@ def test_release_records_call_the_kaggle_run_restart_assisted():
     verification = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
     row = next(line for line in verification.splitlines() if line.startswith("| 2026-09-18 | `9498ad0` / `1b0645e8806a`"))
     assert "Completed only after a manual restart" in row and "PASSED" not in row
-    assert "No hosted run of the current\nblob exists yet" in verification and "requires scipy" in verification
+    assert "requires scipy" in verification and "No hosted run of the current" not in verification
+    hosted = [line for line in verification.splitlines() if line.startswith("| 2026-10-0")]
+    assert any("`fe62ef4` / `0ae808e38df7`" in line and "**FAILED**" in line for line in hosted)
+    assert any("`d2aa5071ba92`" in line and "**PASSED**" in line and "no restart" in line for line in hosted)
     registry = (ROOT / "tutorials" / "README.md").read_text(encoding="utf-8")
     inference_row = next(line for line in registry.splitlines() if line.startswith("| `mask2former_panoptic_colab.ipynb`"))
     assert "verified — clean-runtime" not in inference_row and "only after a manual restart" in inference_row

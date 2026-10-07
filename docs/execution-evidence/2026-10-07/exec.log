@@ -1,0 +1,169 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/mask2former-panoptic-pipeline-d124c0f-c91658/mask2former_panoptic_colab_d124c0f_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/13 - Infrastructure: install the locked runtime into an isolated environment...
+{'isolated_environment': '/content/dimer_isolated_env', 'isolated_python': '3.12.12', 'kernel_python': '3.13.15', 'locked_packages': 48, 'setup_seconds': 56}
+[colab] Executing cell 2/13 - Infrastructure: route the remaining cells to the isolated environment...
+Every later code cell now runs in /content/dimer_isolated_env/bin/python (pid 972).
+[colab] Executing cell 3/13 - Infrastructure: record the runtime...
+{'notebook_source': {'repository': 'mask2former-panoptic-pipeline', 'repository_revision': 'fe62ef4905a3a4d864fd39001cf44ffa79b6495d', 'embedded_module': 'src/mask2former_panoptic_pipeline/pipeline.py', 'embedded_modules': ['src/mask2former_panoptic_pipeline/samples.py', 'src/mask2former_panoptic_pipeline/pipeline.py'], 'module_sha256': '886084d3e7c028bd0095721704fa32862b71dcca55da9de4acc116419446e9b5', 'generator': 'build_notebook.py/2.1', 'notebook_spec': '2.0'}, 'python': '3.12.12', 'torch': '2.14.0+cu130', 'transformers': '4.57.6', 'cuda': True}
+[colab] Executing cell 4/13 - Infrastructure: carried module `src/mask2former_panoptic_pipeline/samples.py` (you may run it without reading it)...
+[colab] Executing cell 5/13 - Infrastructure: carried module `src/mask2former_panoptic_pipeline/pipeline.py` (you may run it without reading it)...
+[colab] Executing cell 6/13 - Infrastructure: pin, stage and verify the model (you may run it without reading it)...
+{'model_id': 'facebook/mask2former-swin-tiny-coco-panoptic', 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77', 'license': 'mit', 'files': 4, 'total_bytes': 190138785}
+{'weights_dir': '/content/weights/mask2former-swin-tiny-coco-panoptic', 'fetched': ['README.md', 'config.json', 'model.safetensors', 'preprocessor_config.json']}
+{'verified_files': 4, 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77'}
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+/content/dimer_isolated_env/lib/python3.12/site-packages/transformers/image_processing_base.py:417: UserWarning: The following named arguments are not valid for `Mask2FormerImageProcessor.__init__` and were ignored: '_max_size', 'reduce_labels'
+  image_processor = cls(**image_processor_dict)
+{'device': 'cuda:0', 'source': '/content/weights/mask2former-swin-tiny-coco-panoptic'}
+[colab] Executing cell 7/13 - mask2former_panoptic-15...
+{'sample_kind': 'synthetic', 'name': 'synthetic_shapes_640x480.png', 'mode': 'RGB', 'size': (640, 480), 'rgb_sha256': '7d695224e2e73b1acd5e9a8eda4db145f774741d0f884f1ead68d5f1fc6c32c4', 'thresholds': {'score': 0.5, 'overlap': 0.8, 'mask': 0.5}, 'input_adjustments': [], 'reference_regions': [('sky', 'stuff', 0.431), ('ground', 'stuff', 0.282), ('disc', 'thing', 0.084), ('box', 'thing', 0.152), ('triangle', 'thing', 0.052)]}
+<PIL.Image.Image image mode=RGB size=640x480 at 0x7D3A0DC12600>
+
+[Image saved to: /tmp/tmph9g5bm8t.png]
+[colab] Executing cell 8/13 - mask2former_panoptic-17...
+{'ceilings': {'MIN_IMAGE_SIDE': 16, 'MAX_IMAGE_SIDE': 4096, 'INPUT_SIZE': 384, 'MASK_LOGIT_SIZE': 96, 'NUM_QUERIES': 100, 'SCORE_THRESHOLD': 0.5, 'OVERLAP_THRESHOLD': 0.8, 'MASK_THRESHOLD': 0.5}}
+{
+  "schema": {
+    "input": "one PIL.Image.Image (any mode, converted to RGB)",
+    "image_side_px": [
+      16,
+      4096
+    ],
+    "score_threshold": [
+      0.0,
+      1.0
+    ],
+    "overlap_threshold": [
+      0.0,
+      1.0
+    ],
+    "mask_threshold": [
+      0.0,
+      1.0
+    ],
+    "preprocessing": "image converted to RGB and resized to 384x384 (aspect ratio not preserved, ImageNet mean/std); the decoder emits 100 (class distribution, 96x96 mask logit) pairs; surviving masks are resampled bilinearly to the input size",
+    "output": "a panoptic map at input resolution (int32, one segment id per pixel, -1 = void) and one entry per segment: id, label, class index, thing/stuff, score (the query's softmax class probability, uncalibrated), area fraction, tight box, was_fused"
+  },
+  "inputs": [
+    {
+      "id": "synthetic_shapes_640x480.png",
+      "mode": "RGB",
+      "size": [
+        640,
+        480
+      ]
+    }
+  ],
+  "score_threshold": 0.5,
+  "overlap_threshold": 0.8,
+  "mask_threshold": 0.5,
+  "verdict": "accepted",
+  "findings": [
+    {
+      "input": "threshold-probe",
+      "verdict": "rejected",
+      "message": "score_threshold must be a number in [0, 1], got 1.5"
+    }
+  ],
+  "model_id": "facebook/mask2former-swin-tiny-coco-panoptic",
+  "model_revision": "df6b1142ff50c3276559d9d78f35f6a579c75a77"
+}
+[colab] Executing cell 9/13 - mask2former_panoptic-19...
+{'device': 'cuda:0', 'seconds': 2.31, 'n_segments': 1, 'void_fraction': 0.917, 'vocabulary_size': 133}
+id= 1 stop sign              thing  score=0.601  area=0.083  bbox=[80, 80, 260, 261]  fused=False
+{'degenerate_inputs': {'blank': {'segments': [('sky-other-merged', 0.798, 1.0)], 'void_fraction': 0.0}, 'noise': {'segments': [('sky-other-merged', 0.572, 0.949)], 'void_fraction': 0.051}}}
+[colab] Executing cell 10/13 - mask2former_panoptic-21...
+{
+  "fetched": true,
+  "url": "http://images.cocodataset.org/val2017/000000039769.jpg",
+  "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e",
+  "bytes": 173131,
+  "size": [
+    640,
+    480
+  ],
+  "seconds": 0.13,
+  "segments": [
+    [
+      "cat",
+      0.998,
+      0.193
+    ],
+    [
+      "cat",
+      0.997,
+      0.171
+    ],
+    [
+      "remote",
+      0.994,
+      0.014
+    ],
+    [
+      "remote",
+      0.953,
+      0.007
+    ],
+    [
+      "couch",
+      0.811,
+      0.566
+    ]
+  ],
+  "void_fraction": 0.049,
+  "expected_labels": [
+    "cat",
+    "couch",
+    "remote"
+  ],
+  "expected_labels_found": [
+    "cat",
+    "couch",
+    "remote"
+  ],
+  "unexpected_labels": []
+}
+<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=640x480 at 
+0x7D39B7799190>
+
+[Image saved to: /tmp/tmpl45yfwi_.png]
+[colab] Executing cell 11/13 - mask2former_panoptic-23...
+{
+  "task": "panoptic segmentation: every pixel is assigned to one segment (thing instance or fused stuff) or void",
+  "decision_rule": "a query survives when its best class probability reaches score_threshold; each pixel goes to the surviving query with the highest score-weighted mask probability and is assigned only where that query's mask probability reaches mask_threshold (otherwise void); a query whose assigned area is below overlap_threshold of its thresholded mask is dropped; scores are uncalibrated softmaxes",
+  "thresholds": {
+    "score_threshold": 0.5,
+    "overlap_threshold": 0.8,
+    "mask_threshold": 0.5
+  },
+  "sample_kind": "synthetic",
+  "n_segments": 1,
+  "void_fraction": 0.9170247395833333,
+  "labels": [
+    [
+      "stop sign",
+      0.6013,
+      0.083
+    ]
+  ],
+  "baselines": [],
+  "model_id": "facebook/mask2former-swin-tiny-coco-panoptic",
+  "model_revision": "df6b1142ff50c3276559d9d78f35f6a579c75a77",
+  "verdict": "sample-sanity",
+  "reason": "5 reference region(s) on one tutorial sample, matched regardless of class label; geometry sanity evidence, not a COCO panoptic benchmark",
+  "needs": "panoptic annotations from the deployment domain with a matching vocabulary for any PQ claim"
+}
+pq       0.3304  (one reference map on a single image, no dispersion estimate)
+sq       0.9912  (one reference map on a single image, no dispersion estimate)
+rq       0.3333  (one reference map on a single image, no dispersion estimate)
+matches  {'region': {'tp': 1, 'fp': 0, 'fn': 4}}  (true/false positive and false negative segment counts behind pq)
+{'photo_verdict': 'not-measurable', 'photo_labels': [('cat', 0.9977, 0.1932), ('cat', 0.9966, 0.1709), ('remote', 0.9943, 0.0138), ('remote', 0.9531, 0.007), ('couch', 0.8111, 0.5665)]}
+[colab] Executing cell 12/13 - mask2former_panoptic-25...
+['mask2former_panoptic_evaluation_report.json', 'mask2former_panoptic_input_manifest.json', 'mask2former_panoptic_photo_evaluation_report.json', 'mask2former_panoptic_photo_overlay.png', 'mask2former_panoptic_photo_segmentation.png', 'mask2former_panoptic_result.json', 'mask2former_panoptic_sample_overlay.png', 'mask2former_panoptic_sample_segmentation.png']
+<PIL.PngImagePlugin.PngImageFile image mode=RGB size=640x480 at 0x7D3A0DA65B80>
+
+[Image saved to: /tmp/tmp3y7j66b0.png]
+[colab] Executing cell 13/13 - mask2former_panoptic-27...
+         score |           mask |        overlap |         sample |       segments |           void |             pq | photo_segments |     photo_void
+           0.5 |            0.5 |            0.8 |      synthetic |              1 |          0.917 |           0.33 |              5 |          0.049
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/mask2former-panoptic-pipeline-d124c0f-c91658/mask2former_panoptic_colab_d124c0f_colab-cli-t4_output.ipynb'...
