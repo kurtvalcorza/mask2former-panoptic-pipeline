@@ -15,10 +15,13 @@ TEMPLATE = {
     "mode": "GUIDED",
     "isolated_runtime": True,
     "infrastructure_labels": True,
+    "collapse_model_cell": True,
     # The fleet's uv isolated-environment mechanism (bioclip2-biodiversity-pipeline, siglip-v1-zero-shot-pipeline): a
-    # managed CPython, a size- and SHA-256-verified uv wheel, and a lock compiled from the pyproject pins with
-    # `uv pip compile pyproject.toml --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes
-    # --only-binary :all: -o tutorials/requirements-colab.lock.txt` (shared by both notebooks).
+    # managed CPython, a size- and SHA-256-verified uv wheel, and the lock shared with the TASK-INFERENCE notebook,
+    # compiled from `pins_file` (the pyproject pins plus scipy==1.18.1, which transformers 4.57.6 requires to build
+    # Mask2FormerLoss in Mask2FormerForUniversalSegmentation.__init__; review M2P-M1, PR #7). See
+    # tools/notebook_template.py for the compile command.
+    "pins_file": "tutorials/requirements-colab.in",
     "managed_python": "3.12.12",
     "uv": {
         "version": "0.12.15",

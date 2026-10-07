@@ -150,8 +150,11 @@ NOTEBOOKS = {
 # deserialise a PyTorch checkpoint or enable remote code does so inside the package, with the trust
 # boundary stated in the notebook; none by default).
 FORBIDDEN_PATTERNS_MODULE_EXEMPT: tuple[str, ...] = ()
-# Inference must happen in this kernel: no worker process, no worker CLI, no subprocess outside the
-# generator-owned install cell (Kurt 2026-09-13). Checked on every code cell except the embedded ones and cell 1.
+# Inference must happen in the notebook: no DIMER worker process, no worker CLI, no subprocess outside the
+# generator-owned setup cells (Kurt 2026-09-13). The setup cells are the runtime-record cell (`NOTEBOOK_SOURCE`, with
+# its guarded pip install) and, for a notebook built with the generator's `isolated_runtime` (review M2P-M1, Kurt's
+# standing uv decision of 2026-10-03), the two `# dimer: kernel cell` cells that build the hash-locked environment and
+# route the remaining cells to one Python process in it. Checked on every other code cell except the embedded ones.
 FORBIDDEN_WORKER_CALLS = ("worker.run(", "worker_cli(", "subprocess.run([")
 # Direct-library use that must stay inside the carried module cells (G2: the notebook calls the
 # pipeline API, it does not reimplement it). Checked on every code cell except the embedded ones.
@@ -215,11 +218,9 @@ COMMON_CODE_MARKERS = (
     "PINS = [",
     "NOTEBOOK_SOURCE = {",
     "SKIP_INSTALL = os.environ.get('DIMER_NOTEBOOK_CI_PREINSTALLED') == '1'",
-    "'--require-hashes', '--only-binary', ':all:'",
-    "'--managed-python'",
-    "if len(wheel) != UV_BYTES or hashlib.sha256(wheel).hexdigest() != UV_SHA256:",
-    "if hashlib.sha256(LOCK_TEXT.encode('utf-8')).hexdigest() != LOCK_SHA256:",
-    "_ip.input_transformers_cleanup.append(_route_to_isolated_runtime)",
+    "subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', *PINS], check=True)",
+    "importlib.metadata.packages_distributions()",
+    "importlib.invalidate_caches()",
     "platform.python_version()",
     "torch.__version__",
     "MANIFEST = {",
@@ -613,7 +614,7 @@ def _validate_embedded_modules(path: Path, notebook: dict, build, template: dict
             f"{path.name}: cell {index} module_sha256 tag does not match {rel}",
         )
         _check(
-            _cell_source(cell).rstrip("\n") + "\n" == context["embedded"][module],
+            build.strip_carried_title(_cell_source(cell)).rstrip("\n") + "\n" == context["embedded"][module],
             f"{path.name}: embedded module cell {index} differs from {rel} (PAR1); regenerate the notebook",
         )
     return [index for index, _ in tagged]
@@ -668,14 +669,45 @@ def _validate_parity(
 
 
 def _validate_bootstrap_guard(path: Path, code_cells: list[tuple[int, str, ast.Module]]) -> None:
-    """RUN1/RUN10/ENV6 (fleet sweep SWP-R): nothing is pip-installed into the kernel and no cell asks for a restart.
-    Exactly one cell runs in the kernel (the isolated-environment bootstrap); it reuses a matching environment."""
-    kernel = [source for _, source, _ in code_cells if "# dimer: kernel cell" in source]
-    _check(len(kernel) == 1, f"{path.name}: exactly one '# dimer: kernel cell' bootstrap cell is required, found {len(kernel)}")
-    code = "\n".join(source for _, source, _ in code_cells)
-    _check("'-m', 'pip', 'install'" not in code and "pip install" not in code, f"{path.name}: no cell may pip-install into the notebook kernel (RUN10)")
-    _check("Restart the runtime" not in code, f"{path.name}: no cell may ask for a runtime restart (RUN1)")
-    _check("_isolated_environment_ready()" in kernel[0], f"{path.name}: the bootstrap cell must reuse a matching isolated environment")
+    """The stale-import guard must actually raise: `if stale:` whose body raises RuntimeError. (With `isolated_runtime`
+    the guard is carried but skipped: the worker sets DIMER_NOTEBOOK_CI_PREINSTALLED=1, so nothing is pip-installed.)"""
+    raises = False
+    for _, _, tree in code_cells:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == "stale":
+                for sub in ast.walk(node):
+                    if isinstance(sub, ast.Raise) and isinstance(sub.exc, ast.Call):
+                        func = sub.exc.func
+                        if isinstance(func, ast.Name) and func.id == "RuntimeError":
+                            raises = True
+    _check(raises, f"{path.name}: install cell must raise RuntimeError when already-imported packages change")
+
+
+def _validate_isolated_runtime(
+    path: Path, code_cells: list[tuple[int, str, ast.Module]], markdown: str, template: dict
+) -> None:
+    """RUN1/RUN10/ENV6 (review M2P-M1; fleet sweep SWP-R): with `isolated_runtime` the notebook installs nothing into
+    its own kernel. Exactly two kernel cells (build or reuse the hash-locked uv environment, route later cells to it)
+    come first, the carried lock matches its digest and the repository lock, the kernel cells never pip-install, and
+    no learner-facing text asks for a restart."""
+    kernel = [(index, source) for index, source, _ in code_cells if "# dimer: kernel cell" in source]
+    if not template.get("isolated_runtime"):
+        _check(not kernel, f"{path.name}: kernel cells without isolated_runtime in its template")
+        return
+    _check(len(kernel) == 2, f"{path.name}: isolated_runtime needs exactly two '# dimer: kernel cell' cells, found {len(kernel)}")
+    _check([i for i, _ in kernel] == [i for i, _, _ in code_cells[:2]], f"{path.name}: the kernel cells must be the first two code cells")
+    install, router = kernel[0][1], kernel[1][1]
+    for marker in ('"--require-hashes", "--only-binary", ":all:"', '"--managed-python"', "LOCK_SHA256", "UV_SHA256"):
+        _check(marker in install, f"{path.name}: the isolated install cell must carry {marker}")
+    lock = re.search(r"^LOCK_TEXT = r\'\'\'(.*?)\'\'\'$", install, re.M | re.S)
+    digest = re.search(r"^LOCK_SHA256 = '([0-9a-f]{64})'$", install, re.M)
+    _check(lock is not None and digest is not None, f"{path.name}: the install cell must carry LOCK_TEXT and LOCK_SHA256")
+    _check(hashlib.sha256(lock.group(1).encode("utf-8")).hexdigest() == digest.group(1), f"{path.name}: LOCK_TEXT does not match LOCK_SHA256")
+    _check(lock.group(1) == _read(ROOT / template["lock"]), f"{path.name}: the carried lock differs from {template['lock']}")
+    _check("_isolated_environment_ready()" in install, f"{path.name}: the install cell must reuse a matching isolated environment (SWP-R)")
+    _check("pip install" not in install and "'-m', 'pip'" not in install, f"{path.name}: the kernel cells must not pip-install into the kernel (RUN10)")
+    _check("_ip.input_transformers_cleanup.append(_route_to_isolated_runtime)" in router, f"{path.name}: the second kernel cell must route later cells")
+    _check("Restart the runtime" not in markdown, f"{path.name}: learner-facing text must not ask for a restart (RUN1)")
 
 
 def _validate_notebook_content(
@@ -689,8 +721,8 @@ def _validate_notebook_content(
     model_id, _revision = _package_identity(template)
     stripped = {index: _strip_comments(source) for index, source, _ in code_cells}
     code = "\n".join(stripped.values())
-    # The isolated-runtime bootstrap (the one '# dimer: kernel cell', checked by _validate_bootstrap_guard) downloads
-    # the pinned uv wheel and runs uv; it is infrastructure, not model logic, so G2 does not apply to it.
+    # The isolated-runtime kernel cells ('# dimer: kernel cell', checked by _validate_isolated_runtime) download the
+    # pinned uv wheel and run uv; they are infrastructure, not model logic, so G2 does not apply to them.
     kernel = {index for index, source, _ in code_cells if "# dimer: kernel cell" in source}
     outside = "\n".join(text for index, text in stripped.items() if index not in embedded and index not in kernel)
     missing = [marker for marker in COMMON_CODE_MARKERS + spec["code_markers"] if marker not in code]
@@ -703,11 +735,13 @@ def _validate_notebook_content(
     _check(not present, f"{path.name}: forbidden/insecure source: {present}")
     leaked = [marker for marker in FORBIDDEN_OUTSIDE_MODULE if marker in outside]
     _check(not leaked, f"{path.name}: direct library use outside the carried module cell (G2): {leaked}")
-    install_index = code_cells[0][
-        0
-    ]  # the generator-owned install cell is the only place a subprocess may run
+    setup = {code_cells[0][0]} | {
+        index
+        for index, source, _ in code_cells
+        if "# dimer: kernel cell" in source or "NOTEBOOK_SOURCE = {" in source
+    }  # the generator-owned setup cells are the only places a subprocess may run
     after_install = "\n".join(
-        text for index, text in stripped.items() if index not in embedded and index != install_index
+        text for index, text in stripped.items() if index not in embedded and index not in setup
     )
     workers = [marker for marker in FORBIDDEN_WORKER_CALLS if marker in after_install]
     _check(not workers, f"{path.name}: worker process or subprocess on the primary path (ST1): {workers}")
@@ -717,6 +751,7 @@ def _validate_notebook_content(
     )
     _validate_gates(path, code_cells, spec["byod_gates"])
     _validate_bootstrap_guard(path, code_cells)
+    _validate_isolated_runtime(path, code_cells, markdown, template)
     for filename in spec["expected_outputs"]:
         _check(filename in code, f"{path.name}: must export {filename}")
     missing_md = [
