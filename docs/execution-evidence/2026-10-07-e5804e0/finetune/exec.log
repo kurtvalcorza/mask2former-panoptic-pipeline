@@ -1,0 +1,231 @@
+[colab] Parsing notebook '/home/kurt/colab-runs/mask2former-panoptic-pipeline-e5804e0-51f611/mask2former_panoptic_finetune_colab_e5804e0_colab-cli-t4.ipynb'...
+[colab] Executing cell 1/15 - Infrastructure: install the locked runtime into an isolated environment...
+{'isolated_environment': '/content/dimer_isolated_env_cc5e7ed8c19d', 'reused': False, 'isolated_python': '3.12.12', 'kernel_python': '3.13.15', 'locked_packages': 48, 'setup_seconds': 58}
+[colab] Executing cell 2/15 - Infrastructure: route the remaining cells to the isolated environment...
+{'routed_to': '/content/dimer_isolated_env_cc5e7ed8c19d/bin/python', 'worker_pid': 1154, 'worker_reused': False}
+[colab] Executing cell 3/15 - Infrastructure: record the runtime...
+{'notebook_source': {'repository': 'mask2former-panoptic-pipeline', 'repository_revision': '1486c57bd5b05fb368443f3851248d6d9b5d8c35', 'embedded_module': 'src/mask2former_panoptic_pipeline/pipeline.py', 'embedded_modules': ['src/mask2former_panoptic_pipeline/samples.py', 'src/mask2former_panoptic_pipeline/pipeline.py'], 'module_sha256': '886084d3e7c028bd0095721704fa32862b71dcca55da9de4acc116419446e9b5', 'generator': 'build_notebook.py/2.2', 'notebook_spec': '2.0'}, 'python': '3.12.12', 'torch': '2.14.0+cu130', 'transformers': '4.57.6', 'cuda': True}
+[colab] Executing cell 4/15 - Infrastructure: carried module `src/mask2former_panoptic_pipeline/samples.py` (you may run it without reading it)...
+[colab] Executing cell 5/15 - Infrastructure: carried module `src/mask2former_panoptic_pipeline/pipeline.py` (you may run it without reading it)...
+[colab] Executing cell 6/15 - Infrastructure: pin, stage and verify the model (you may run it without reading it)...
+{'model_id': 'facebook/mask2former-swin-tiny-coco-panoptic', 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77', 'license': 'mit', 'files': 4, 'total_bytes': 190138785}
+{'weights_dir': '/content/weights/mask2former-swin-tiny-coco-panoptic', 'fetched': ['README.md', 'config.json', 'model.safetensors', 'preprocessor_config.json']}
+{'verified_files': 4, 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77'}
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+/content/dimer_isolated_env_cc5e7ed8c19d/lib/python3.12/site-packages/transformers/image_processing_base.py:417: UserWarning: The following named arguments are not valid for `Mask2FormerImageProcessor.__init__` and were ignored: '_max_size', 'reduce_labels'
+  image_processor = cls(**image_processor_dict)
+{'device': 'cuda:0', 'source': '/content/weights/mask2former-swin-tiny-coco-panoptic'}
+[colab] Executing cell 7/15 - mask2former_panoptic_finetune-16...
+{
+  "seconds": 1.79,
+  "vocabulary_size": 133,
+  "segments": [
+    [
+      "stop sign",
+      0.601,
+      0.083
+    ]
+  ],
+  "void_fraction": 0.917,
+  "drawn_regions": [
+    [
+      "sky",
+      "stuff",
+      0.431
+    ],
+    [
+      "ground",
+      "stuff",
+      0.282
+    ],
+    [
+      "disc",
+      "thing",
+      0.084
+    ],
+    [
+      "box",
+      "thing",
+      0.152
+    ],
+    [
+      "triangle",
+      "thing",
+      0.052
+    ]
+  ]
+}
+<PIL.Image.Image image mode=RGB size=640x480 at 0x7E690C98C5F0>
+
+[Image saved to: /tmp/tmpm14pz9_p.png]
+[colab] Executing cell 8/15 - mask2former_panoptic_finetune-18...
+{
+  "class_names": [
+    "sky",
+    "ground",
+    "disc",
+    "box",
+    "triangle"
+  ],
+  "stuff_names": [
+    "sky",
+    "ground"
+  ],
+  "thing_names": [
+    "disc",
+    "box",
+    "triangle"
+  ],
+  "n_records": 24,
+  "instances_per_class": {
+    "sky": 24,
+    "ground": 24,
+    "disc": 16,
+    "box": 15,
+    "triangle": 23
+  },
+  "image_sizes": [
+    [
+      320,
+      240
+    ]
+  ],
+  "epochs": 6,
+  "dataset_sha256": "f9d21dfed181521ca78dd004ff1f9b5a363a2e0a74f1f5a4fd26f5ce55f317fa",
+  "verdict": "accepted",
+  "findings": [
+    {
+      "record": "unassigned-pixel-probe",
+      "verdict": "rejected",
+      "message": "record 'scene-0-000': instance ids in the map [0, 1, 2, 3] must equal the mapping's [1, 2, 3] and contain no 0 (every pixel must belong to an instance)"
+    }
+  ]
+}
+record shape expected by finetune: {'id': str, 'image': PIL.Image.Image, 'instance_map': int32 array (H, W) with one id per pixel (0 is not allowed: every pixel belongs to an instance), 'instances': {instance_id: class_name}}
+first six scenes; instances of the first: {1: 'sky', 2: 'ground', 3: 'disc'}
+<PIL.Image.Image image mode=RGB size=960x480 at 0x7E68EB7D4080>
+
+[Image saved to: /tmp/tmpr1yfwfg_.png]
+[colab] Executing cell 9/15 - mask2former_panoptic_finetune-20...
+{'train': 18, 'held_out': 6, 'train_instances': 76, 'held_out_instances': 26}
+Some weights of Mask2FormerForUniversalSegmentation were not initialized from the model checkpoint at /content/weights/mask2former-swin-tiny-coco-panoptic and are newly initialized because the shapes did not match:
+- class_predictor.bias: found shape torch.Size([134]) in the checkpoint and torch.Size([6]) in the model instantiated
+- class_predictor.weight: found shape torch.Size([134, 256]) in the checkpoint and torch.Size([6, 256]) in the model instantiated
+- criterion.empty_weight: found shape torch.Size([134]) in the checkpoint and torch.Size([6]) in the model instantiated
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+{'class_names': ['sky', 'ground', 'disc', 'box', 'triangle'], 'stuff_names': ['sky', 'ground'], 'device': 'cuda:0', 'adapted': False, 'train_num_points': 4096}
+tensors re-initialised because they could not transfer from the COCO checkpoint: ['class_predictor.bias', 'class_predictor.weight', 'criterion.empty_weight']
+{'baseline_pq': 0.0, 'sq': 0.0, 'rq': 0.0, 'things_pq': 0.0, 'stuff_pq': 0.0, 'seconds': 1.1}
+{'trivial_all_sky_pq': 0.1032, 'per_class': {'sky': 0.516, 'ground': 0.0, 'box': 0.0, 'disc': 0.0, 'triangle': 0.0}}
+{'trivial_horizon_split_pq': 0.3184, 'horizon_row': 160, 'stuff_pq': 0.7961, 'things_pq': 0.0, 'per_class': {'sky': 0.822, 'ground': 0.77, 'box': 0.0, 'disc': 0.0, 'triangle': 0.0}}
+[colab] Executing cell 10/15 - mask2former_panoptic_finetune-22...
+epoch 1/6  steps 9  mean loss 33.588  last 22.323  3 s
+epoch 2/6  steps 18  mean loss 16.846  last 13.777  6 s
+epoch 3/6  steps 27  mean loss 11.383  last 10.735  8 s
+epoch 4/6  steps 36  mean loss 8.700  last 6.809  10 s
+epoch 5/6  steps 45  mean loss 7.293  last 6.445  13 s
+epoch 6/6  steps 54  mean loss 6.400  last 6.183  16 s
+{
+  "adaptation": "gradient fine-tuning of the transformer decoder and pixel decoder with a re-initialised class head; backbone frozen",
+  "loss": "Mask2Former set loss: Hungarian matching; class CE (2.0) + point-sampled mask BCE (5.0) + dice (5.0); no-object weight 0.1; auxiliary decoder losses",
+  "optimizer": "AdamW",
+  "learning_rate": 0.0001,
+  "weight_decay": 0.05,
+  "epochs": 6,
+  "batch_size": 2,
+  "steps": 54,
+  "seed": 0,
+  "precision": "float32",
+  "train_num_points": 4096,
+  "freeze_backbone": true,
+  "freeze_pixel_decoder": false,
+  "trainable_parameters": 19881670,
+  "total_parameters": 47402368,
+  "seconds": 15.9,
+  "device": "cuda:0"
+}
+mean epoch loss 33.588 -> 6.400 over 6 epochs (optimisation evidence only)
+[colab] Executing cell 11/15 - mask2former_panoptic_finetune-24...
+{'adapted_pq': 0.9264, 'sq': 0.9747, 'rq': 0.9492, 'things_pq': 0.8783, 'stuff_pq': 0.9986, 'seconds': 0.5}
+per class: {'sky': {'pq': 0.998, 'sq': 0.998, 'rq': 1.0, 'tp': 6, 'fp': 0, 'fn': 0}, 'ground': {'pq': 0.999, 'sq': 0.999, 'rq': 1.0, 'tp': 6, 'fp': 0, 'fn': 0}, 'box': {'pq': 0.842, 'sq': 0.983, 'rq': 0.857, 'tp': 3, 'fp': 0, 'fn': 1}, 'disc': {'pq': 0.809, 'sq': 0.911, 'rq': 0.889, 'tp': 4, 'fp': 0, 'fn': 1}, 'triangle': {'pq': 0.983, 'sq': 0.983, 'rq': 1.0, 'tp': 5, 'fp': 0, 'fn': 0}}
+
+metric        all-sky    horizon   baseline    adapted     change
+pq             0.1032     0.3184     0.0000     0.9264    +0.9264
+sq             0.1238     0.3184     0.0000     0.9747    +0.9747
+rq             0.1667     0.4000     0.0000     0.9492    +0.9492
+{'things_pq': {'all_sky': 0.0, 'horizon': 0.0, 'adapted': 0.8783}, 'stuff_pq': {'all_sky': 0.2579, 'horizon': 0.7961, 'adapted': 0.9986}}
+[colab] Executing cell 12/15 - mask2former_panoptic_finetune-26...
+{'id': 'scene-123-000', 'input': {'id': 'scene-123-000', 'mode': 'RGB', 'size': [320, 240]}, 'segments': [('ground', 0.991, 0.417), ('sky', 0.991, 0.558), ('box', 0.98, 0.025)], 'void_fraction': 0.0, 'reference_instances': {1: 'sky', 2: 'ground', 3: 'box'}}
+{'id': 'scene-123-001', 'input': {'id': 'scene-123-001', 'mode': 'RGB', 'size': [320, 240]}, 'segments': [('sky', 0.991, 0.707), ('ground', 0.991, 0.264), ('disc', 0.974, 0.029)], 'void_fraction': 0.0, 'reference_instances': {1: 'sky', 2: 'ground', 3: 'disc'}}
+{'id': 'scene-123-002', 'input': {'id': 'scene-123-002', 'mode': 'RGB', 'size': [320, 240]}, 'segments': [('ground', 0.994, 0.258), ('sky', 0.992, 0.637), ('disc', 0.972, 0.086), ('box', 0.942, 0.016)], 'void_fraction': 0.003, 'reference_instances': {1: 'sky', 2: 'ground', 3: 'disc', 4: 'box', 5: 'disc'}}
+{'id': 'scene-123-003', 'input': {'id': 'scene-123-003', 'mode': 'RGB', 'size': [320, 240]}, 'segments': [('ground', 0.993, 0.329), ('sky', 0.992, 0.654), ('triangle', 0.979, 0.017)], 'void_fraction': 0.0, 'reference_instances': {1: 'sky', 2: 'ground', 3: 'triangle'}}
+{'new_data_pq': 0.9093, 'n_images': 4}
+<PIL.Image.Image image mode=RGB size=1280x240 at 0x7E690C495B50>
+
+[Image saved to: /tmp/tmp4js5p3t9.png]
+[colab] Executing cell 13/15 - mask2former_panoptic_finetune-28...
+{
+  "path": "outputs/mask2former-panoptic-adapted",
+  "format": "dimer_mask2former_panoptic_adapted/1",
+  "files": [
+    {
+      "path": "config.json",
+      "bytes": 75429,
+      "sha256": "fc8d314601e22879b8ef6a851c314508bfb557f237db4ae0b835d8a785e1245a"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 189920768,
+      "sha256": "753096afc1ca7b7313880f3051aa01ab6a548727555ca052aaf91b0ad3bc10ef"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "bytes": 540,
+      "sha256": "de1f9931f4e44e94a8c10ee6d6400b907fe201668f2f5d0046177a72b6e49901"
+    }
+  ],
+  "class_names": [
+    "sky",
+    "ground",
+    "disc",
+    "box",
+    "triangle"
+  ],
+  "stuff_names": [
+    "sky",
+    "ground"
+  ],
+  "total_bytes": 189996737
+}
+{'source': 'outputs/mask2former-panoptic-adapted', 'class_names': ['sky', 'ground', 'disc', 'box', 'triangle'], 'stuff_names': ['sky', 'ground'], 'adapted': True, 'device': 'cuda:0'}
+{'reloaded_pq': 0.926413, 'adapted_pq': 0.926413}
+{'pixel_agreement_first_held_out_scene': 1.0}
+fresh reload reproduces the adapted score and map exactly
+tampered artifact refused -> artifact base {'modelId': 'facebook/mask2former-swin-tiny-coco-panoptic', 'revision': '0000000000000000000000000000000000000000', 'license': 'mit'} != package pins facebook/mask2former-swin-tiny-coco-panoptic@df6b1142ff50c3276559d9d78f35f6a579c75a77
+[colab] Executing cell 14/15 - mask2former_panoptic_finetune-30...
+['mask2former-panoptic-adapted', 'mask2former_panoptic_finetune_dataset_manifest.json', 'mask2former_panoptic_finetune_evaluation_report.json', 'mask2former_panoptic_finetune_result.json']
+[colab] Executing cell 15/15 - mask2former_panoptic_finetune-32...
+BYOD dataset schema: {
+  "record": "{'id': str, 'image': PIL.Image.Image, 'instance_map': int32 array (H, W) with one id per pixel (0 is not allowed: every pixel belongs to an instance), 'instances': {instance_id: class_name}}",
+  "class_names": "2..32 distinct names of at most 32 chars",
+  "stuff_names": "subset of class_names whose regions are amorphous (fused per image); the rest are things",
+  "images": [
+    1,
+    200
+  ],
+  "instances_per_image": [
+    1,
+    50
+  ],
+  "instance_ids": [
+    1,
+    254
+  ],
+  "epochs": [
+    1,
+    20
+  ],
+  "preprocessing": "images are converted to RGB and resized by the pinned Mask2Former image processor (384x384, aspect ratio not preserved, ImageNet mean/std); instance maps are resized with nearest-neighbour sampling to the same size and turned into one binary mask + class label per instance"
+}
+on-disk layout for BYOD_DATASET_PATH: <root>/dataset.json = {"class_names": ["sky", "ground", "disc"], "stuff_names": ["sky", "ground"], "records": [{"id": "scene-000", "image": "images/scene-000.png", "mask": "masks/scene-000.png", "instances": {"1": "sky", "2": "ground", "3": "disc"}}]} ; each mask is a PNG whose pixel values are the instance ids (1..254, every pixel assigned)
+[colab] Saving notebook with outputs to '/home/kurt/colab-runs/mask2former-panoptic-pipeline-e5804e0-51f611/mask2former_panoptic_finetune_colab_e5804e0_colab-cli-t4_output.ipynb'...
