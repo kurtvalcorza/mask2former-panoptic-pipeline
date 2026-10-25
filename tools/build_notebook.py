@@ -689,12 +689,27 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
         if n_mod == 1
         else f"the repository's package ({n_mod} modules under `{ctx['pkg_rel']}/`, at revision `{ctx['module_revision'][:12]}`) verbatim in Section 2"
     )
+    # A template MAY declare a later notebook spec (NOTEBOOK_SPEC 2.5: notebook_kind, DOC17 use notice).
+    spec_version = template.get("notebook_spec", NOTEBOOK_SPEC)
+    use_notice = (
+        "> **⚠️ Notice.** For research, training and evaluation only. Not validated for production,\n"
+        "> clinical, diagnostic or safety-critical use. Running this notebook downloads third-party\n"
+        "> model weights and datasets under their own licenses (see the model card) and uses compute\n"
+        "> on your own Colab or Kaggle account. Data you bring stays in your runtime, and you are\n"
+        "> responsible for having the right to use it. Results here are tutorial evidence, not\n"
+        "> benchmarks. Everything is provided \"as is\", without warranty of any kind. To the maximum\n"
+        "> extent permitted by law, the maintainers and the DIMER platform accept no liability for\n"
+        "> its use.\n\n"
+        if template.get("notebook_kind")
+        else ""
+    )
     header = (
         f"# {template['title']}\n\n{badges}\n\n"
         f"**Profile:** `{template['profile']}`  \n"
         f"**Mode:** `{mode}`  \n"
-        f"**Notebook specification:** DIMER Notebook Specification {NOTEBOOK_SPEC} — **standalone** (§4)  \n"
+        f"**Notebook specification:** DIMER Notebook Specification {spec_version} — **standalone** (§4)  \n"
         f"**Capability:** {template['capability']}\n\n"
+        f"{use_notice}"
         f"**This notebook is standalone.** It carries {carried}, the pinned model identity and the per-file SHA-256 manifest in Section 3, "
         f"and the exact runtime pins in Section 1, so it keeps working after export even if the repository changes or disappears. Its only "
         f"external dependencies are the pinned Python distributions and {ctx['host']['name']} at the immutable {ctx['host']['revision_label']} `{ctx['MODEL_REVISION']}` "
@@ -795,7 +810,7 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
             f"    'embedded_modules': {ctx['module_rels']!r},\n"
             f"    'module_sha256': {ctx['module_sha256']!r},\n"
             f"    'generator': {gen!r},\n"
-            f"    'notebook_spec': {NOTEBOOK_SPEC!r},\n"
+            f"    'notebook_spec': {spec_version!r},\n"
             "}\n"
             "SKIP_INSTALL = os.environ.get('DIMER_NOTEBOOK_CI_PREINSTALLED') == '1'\n"
             f"{_INSTALL_GUARD}\n"
@@ -897,7 +912,8 @@ def render(repo: Path, template: dict[str, Any], revision: str | None = None) ->
             "dimer": {
                 "notebook_profile": template["profile"],
                 "notebook_mode": mode,
-                "notebook_spec": NOTEBOOK_SPEC,
+                "notebook_spec": spec_version,
+                **({"notebook_kind": template["notebook_kind"]} if template.get("notebook_kind") else {}),
                 "standalone": True,
                 **({"environment": "isolated hash-locked uv environment; nothing installed into the kernel"} if template.get("isolated_runtime") else {}),
                 "generated_from": {

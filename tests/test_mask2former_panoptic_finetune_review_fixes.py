@@ -269,7 +269,9 @@ def test_m4_per_class_numbers_are_device_qualified_and_warnings_are_named():
         for match in re.finditer(re.escape(value), md):
             context = md[max(0, match.start() - 220) : match.end() + 60]
             assert "CPU" in context or "T4" in context, (value, context)
-    assert "**hypothesis**" in md and "confusable with the ground band's straight edges" not in md
+    # Tier C T44-2: run-to-run differences are not attributed to the device.
+    assert "depend on the device" not in md and "not attributed to the" in md
+    assert "confusable with the ground band's straight edges" not in md
     for warning in ("overflow encountered in exp", "_max_size", "slow-image-processor", "You should probably TRAIN this model"):
         assert warning in md, warning
 
