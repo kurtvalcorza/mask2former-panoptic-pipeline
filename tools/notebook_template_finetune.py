@@ -279,8 +279,8 @@ TEMPLATE = {
                 "of the upstream 12,544 (a CPU-time decision recorded in the artifact); learning rate 1e-4 and weight decay 0.05 "
                 "(the upstream optimizer values); batch size 2; 6 epochs over 18 scenes = 54 steps; float32; **the Swin-T backbone "
                 "is frozen** and kept in eval mode, so 19.9 M of the 47.4 M parameters train (the pixel decoder, the transformer "
-                "decoder and the new head). The mean epoch loss (printed by this cell) went from 33.588 to between 6.400 and 6.659 across "
-                "the two recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026) (33.7 → 6.8 in the CPU smoke run of the earlier "
+                "decoder and the new head). The mean epoch loss (printed by this cell) went from 33.588 to 6.400 and to 6.659 in "
+                "the Colab T4 runs of blob `88249847`, `e5804e0`, 7 October 2026 and blob `6a8423ea`, `a7506f9`, 25 October 2026, and from 33.612 to 6.263 in the run of blob `14cf2531`, `95ba5ce`, 25 October 2026; yours may differ (33.7 → 6.8 in the CPU smoke run of the earlier "
                 "blob `baa9ab41`). **The loss history is optimisation "
                 "evidence only** (FT7): whether the model learned the task is Section 8's question.\n\n"
                 "**Re-running this cell never stacks training.** If `adapter` has already been fine-tuned, the cell rebuilds the "
@@ -289,7 +289,7 @@ TEMPLATE = {
                 "received. To change `EPOCHS` (Section 5), `LEARNING_RATE`, `BATCH_SIZE` or `FREEZE_BACKBONE` (this cell), edit "
                 "the field, then re-run this cell and Section 8 — or select Section 6 and choose **Runtime → Run after**.\n\n"
                 "**Predict:** will the loss fall by a factor of about 2, 5 or 10 over 6 epochs?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nAbout 5: across the two recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026) the mean epoch loss went from 33.588 to 6.400 and to 6.659 in 54 steps (about 15 seconds of training on a Colab T4). That says the optimiser worked; it does not say the segmentation is right.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nIn the recorded runs, about 5: in the Colab T4 runs of blob `88249847`, `e5804e0`, 7 October 2026 and blob `6a8423ea`, `a7506f9`, 25 October 2026 the mean epoch loss went from 33.588 to 6.400 and to 6.659, and in the run of blob `14cf2531`, `95ba5ce`, 25 October 2026 from 33.612 to 6.263, in 54 steps (15 s of training in each of the two runs of 25 October). That says the optimiser worked; it does not say the segmentation is right.\n\n</details>"
             ),
             "code": (
                 'LEARNING_RATE = 1e-4  # @param {{type:"number"}}\n'
@@ -331,10 +331,10 @@ TEMPLATE = {
                 "only a little above the horizon predictor's 0.796.\n\n"
                 "**Per-class values vary from run to run;** the report printed above is your run's. Recorded runs: "
                 "the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) gave held-out PQ 0.9264 (SQ 0.9747, RQ 0.9492; "
-                "`box` 0.842, `disc` 0.809, `triangle` 0.983) and the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) gave 0.9625 (SQ 0.9906, RQ 0.9714; `box` 0.844, `disc` 0.99, `triangle` 0.981); the earlier blob `baa9ab41` gave 0.866 on both a CPU smoke run "
+                "`box` 0.842, `disc` 0.809, `triangle` 0.983) and the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) gave 0.9625 (SQ 0.9906, RQ 0.9714; `box` 0.844, `disc` 0.99, `triangle` 0.981) and the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) gave 0.9179 (SQ 0.9843, RQ 0.9314; `box` 0.84, `disc` 0.767, `triangle` 0.985); the earlier blob `baa9ab41` gave 0.866 on both a CPU smoke run "
                 "(SQ 0.938, RQ 0.911, `box` 0.509, `disc` 0.841, `triangle` 0.981) and a Kaggle T4 run (SQ 0.985, RQ 0.880, "
                 "`box` 0.397, `disc` 0.951, `triangle` 0.986). The weakest thing class changed between runs (`box` in the two "
-                "runs of `baa9ab41` and on 25 October, `disc` on 7 October), and with six held-out scenes — four or five instances per thing class — "
+                "runs of `baa9ab41` and in the run of `6a8423ea`, `disc` in the runs of `88249847` and `14cf2531`), and with six held-out scenes — four or five instances per thing class — "
                 "one missed segment moves a class's PQ by a large step. These differences are therefore not attributed to the "
                 "device or to any other single cause: the notebook has no seed-dispersion estimate (the `DATASET_SEED` "
                 "experiment in Section 13 is how to see one), and your run may differ from all four. The report is written to `outputs/{stem}_evaluation_report.json`.\n\n"
@@ -345,7 +345,7 @@ TEMPLATE = {
                 "processor is used (none is needed); and `You should probably TRAIN this model` appears when Section 6 rebuilds "
                 "the class head — it is exactly what Section 7 then does.\n\n"
                 "**Predict:** which class will stay weakest after adaptation, and why?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nOne run cannot settle it. In the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) the weakest thing class was `disc` (0.809; `box` 0.842, `triangle` 0.983, sky 0.998, ground 0.999, overall 0.9264); in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) it was `box` (0.844; `disc` 0.99, `triangle` 0.981, sky 0.998, ground 0.999, overall 0.9625); in the two runs of the earlier blob `baa9ab41` it was `box` (0.397 on the Kaggle T4, 0.509 on CPU). With four or five instances per thing class one missed segment changes the ranking, so treat any answer as a statement about your run, not a property of the class. Six held-out scenes give no dispersion estimate.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nOne run cannot settle it. In the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) the weakest thing class was `disc` (0.809; `box` 0.842, `triangle` 0.983, sky 0.998, ground 0.999, overall 0.9264); in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) it was `box` (0.844; `disc` 0.99, `triangle` 0.981, sky 0.998, ground 0.999, overall 0.9625); in the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) it was `disc` (0.767; `box` 0.84, `triangle` 0.985, sky 0.998, ground 0.999, overall 0.9179); in the two runs of the earlier blob `baa9ab41` it was `box` (0.397 on the Kaggle T4, 0.509 on CPU). With four or five instances per thing class one missed segment changes the ranking, so treat any answer as a statement about your run, not a property of the class. Six held-out scenes give no dispersion estimate.\n\n</details>"
             ),
             "code": (
                 "t0 = time.time()\n"
@@ -375,9 +375,9 @@ TEMPLATE = {
                 "held-out split. Each is validated through `validate_inputs` (the inference contract: image type, sides, "
                 "thresholds) and segmented with the adapted pipeline — the same `segment` call, the same post-processing, now "
                 "over the five-class vocabulary. Their instance maps are known too, so the cell reports PQ on them as a second sample "
-                "from a different seed (not used for any decision). In both recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026) the first new scene "
-                "came back as `ground`, `sky` and a `box`, with no void.\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nIs the new-data PQ an independent test? Only in a narrow sense: the scenes are new (different seed, never seen), but they come from the same generator, there are four of them and there is no dispersion estimate, so it is a second sample of the same drawn task, not an independent test, and it says nothing about photographs. It scored 0.9093 in the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) and 0.9014 in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) (0.954 in the Kaggle T4 run of the earlier blob `baa9ab41`); the PQ printed above is your run's.\n\n</details>"
+                "from a different seed (not used for any decision). In the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026) the first new scene "
+                "came back as `ground`, `sky` and a `box`, with no void; this can vary between runs.\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nIs the new-data PQ an independent test? Only in a narrow sense: the scenes are new (different seed, never seen), but they come from the same generator, there are four of them and there is no dispersion estimate, so it is a second sample of the same drawn task, not an independent test, and it says nothing about photographs. It scored 0.9093 in the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026), 0.9014 in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) and 0.8712 in the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) (0.954 in the Kaggle T4 run of the earlier blob `baa9ab41`); the PQ printed above is your run's.\n\n</details>"
             ),
             "code": (
                 'NEW_DATA_SEED = 123  # @param {{type:"integer"}}\n\n'
@@ -410,7 +410,7 @@ TEMPLATE = {
                 "model and asserts the PQ is identical and the maps agree pixel for pixel (VER1–VER5); a reload that quietly lost "
                 "the adaptation would stop the notebook here. Finally it tampers with a copy of the manifest and confirms the "
                 'copy is refused, because "it loads" is only evidence if something that should not load is also tried.\n\n'
-                + "<details><summary>Check your reasoning</summary>\n\nWhat would a reload that lost the adaptation look like? A PQ back near 0.0. In each recorded Colab T4 run (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026) the reload reproduced the adapted PQ exactly (0.926413 and 0.962504) with pixel agreement 1.0, and the tampered manifest was refused. These asserts are contract checks, not quality checks.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nWhat would a reload that lost the adaptation look like? A PQ back near 0.0. In each recorded Colab T4 run (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026) the reload reproduced the adapted PQ exactly (0.926413, 0.962504 and 0.917899) with pixel agreement 1.0, and the tampered manifest was refused. These asserts are contract checks, not quality checks.\n\n</details>"
             ),
             "code": (
                 "import shutil\n"
@@ -607,11 +607,11 @@ TEMPLATE = {
         "## Interpretation and limits\n\n"
         "The held-out panoptic quality is a **sample metric on drawn shapes**: six scenes from the same generator as the "
         "training scenes, three thing classes with distinct silhouettes, two stuff classes that always occupy the same halves of "
-        "the image. Reaching PQ between 0.866 and 0.9625 from 0.0 (0.9264 and 0.9625 in "
-        "the two recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026); 0.866 in both recorded runs of the earlier blob `baa9ab41`) shows that the re-headed "
+        "the image. Reaching PQ between 0.866 and 0.9625 from 0.0 in the recorded runs (0.9264, 0.9625 and 0.9179 in "
+        "the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026); 0.866 in both recorded runs of the earlier blob `baa9ab41`) shows that the re-headed "
         "model, the upstream set loss, the bounded loop, the evaluation and the artifact boundary all work together; it does not "
         "show that 18 photographs of your own would train as easily, that the frozen backbone suits your domain, or that the "
-        "weakest thing class (`disc` at 0.809 in the 7 October Colab T4 run, `box` at 0.844 in the 25 October one; `box` at 0.397 on the Kaggle T4 and 0.509 on CPU for the earlier blob `baa9ab41`) would not "
+        "weakest thing class (`disc` at 0.809 in the 7 October Colab T4 run, `box` at 0.844 in the run of `6a8423ea` and `disc` at 0.767 in the run of `14cf2531` on 25 October; `box` at 0.397 on the Kaggle T4 and 0.509 on CPU for the earlier blob `baa9ab41`) would not "
         "need more data. The horizon-split "
         "predictor already scores 0.318 without learning, so the stuff PQ says little; the things PQ (0 for every trivial "
         "predictor) is where the adaptation shows. **Training loss is not task evidence**, the "
