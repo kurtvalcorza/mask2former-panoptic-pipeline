@@ -16,7 +16,8 @@ def _markdown():
 
 def test_two_run_ranges_and_timing_promise_are_gone():
     md = _markdown()
-    for stale in ("to between 6.400 and 6.659", "about 15 seconds of training", "In both recorded Colab T4 runs",
+    for stale in ("to between 6.400 and 6.659", "about 15 seconds of training",
+                  "In both recorded Colab T4 runs",
                   "`box` at 0.844 in the 25 October one"):
         assert stale not in md, stale
 
