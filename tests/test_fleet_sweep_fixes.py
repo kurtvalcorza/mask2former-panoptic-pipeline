@@ -283,6 +283,16 @@ def test_swp_g_checkpoint_answers_agree_with_the_recorded_runs():
     # Tier C T44-1: the checkpoint answers quote the Colab T4 run of blob 88249847 and label the earlier blob's runs.
     for fact in ("0.9264", "0.9093", "0.926413"):
         assert fact in record, fact
-    for quoted in ("PQ 0.0, trivial all-`sky` PQ 0.103", "33.588 → 6.400", "PQ 0.9264", "`disc` (0.809", "0.9093",
+    for quoted in ("PQ 0.0, trivial all-`sky` PQ 0.103", "33.588 to 6.400", "PQ 0.9264", "`disc` (0.809", "0.9093",
                    "0.926413", "0.866 on both a CPU smoke run", "0.954", "pixel agreement 1.0", "blob `88249847`", "blob `baa9ab41`"):
+        assert quoted in finetune, quoted
+
+
+def test_tier_c_prose_holds_across_every_recorded_hosted_run():
+    # Tier C prose-mismatch fix (2026-10-25): each run-derived number names its run, and ranges cover both Colab T4 runs.
+    finetune = _markdown(_nb(FT))
+    for gone in ("not re-run here", "in the latest T4 run", "your run will differ from all three"):
+        assert gone not in finetune, gone
+    for quoted in ("blob `6a8423ea`", "0.9625 (SQ 0.9906, RQ 0.9714", "`box` at 0.844", "0.9014", "0.962504",
+                   "between 6.400 and 6.659", "about 15 seconds of training on a Colab T4", "between 0.866 and 0.9625"):
         assert quoted in finetune, quoted
