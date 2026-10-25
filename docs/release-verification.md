@@ -164,6 +164,8 @@ evidenced by `exec.log` "Executing cell k/N"), and the upload/BYOD and activity 
 
 ## Current status
 
+**Current status (2026-10-25): Candidate, hosted runs pending (REL14).** The current notebook `tutorials/mask2former_panoptic_finetune_colab.ipynb` is blob `6a8423eaa65ffe2c114e8f8c0cdd79695f39bfb3`, regenerated from generator commit `0db3323` for the tier C review findings of row 44. No hosted run of this blob exists yet; every run recorded below is evidence for an earlier blob only. The `TASK-INFERENCE` notebook is unchanged (blob `408a1aba97eb`). Changes in the `E2E` notebook: T44-1 (REL13) makes every guided answer and the Interpretation quote the Colab T4 run of blob `88249847` (`e5804e0`, 2026-10-07: held-out PQ 0.9264, `disc` 0.809 weakest, loss 33.588 → 6.400, new-seed PQ 0.9093, reload 0.926413) and label the CPU smoke and Kaggle T4 runs of the earlier blob `baa9ab41`; T44-2 drops the attribution of per-class differences to the device; T44-3 says that the Section 13 activity re-uses the held-out split as a validation set; T44-4 rewords "independent test"; T44-5 declares Notebook Specification 2.5 for this notebook only (`notebook_kind: TUTORIAL`, use notice, IEEE references). Local checks (generator `--check`, `tools/validate_release_assets.py`, ruff, pytest against the `main` baseline) are source checks, not clean-runtime evidence.
+
 **`TASK-INFERENCE` notebook after the M2P review fixes (2026-10-06):** Section 1 now builds an isolated uv
 environment from the hash-locked `tutorials/requirements-colab.lock.txt` (48 packages compiled from
 `tutorials/requirements-colab.in`, the `pyproject.toml` pins plus `scipy==1.18.1`; the same versions and hashes as
