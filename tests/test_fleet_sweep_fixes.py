@@ -294,5 +294,6 @@ def test_tier_c_prose_holds_across_every_recorded_hosted_run():
     for gone in ("not re-run here", "in the latest T4 run", "your run will differ from all three"):
         assert gone not in finetune, gone
     for quoted in ("blob `6a8423ea`", "0.9625 (SQ 0.9906, RQ 0.9714", "`box` at 0.844", "0.9014", "0.962504",
-                   "between 6.400 and 6.659", "about 15 seconds of training on a Colab T4", "between 0.866 and 0.9625"):
+                   "from 33.612 to 6.263", "15 s of training in each of the two runs of 25 October",
+                   "between 0.866 and 0.9625"):
         assert quoted in finetune, quoted

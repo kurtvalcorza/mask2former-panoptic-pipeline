@@ -229,7 +229,7 @@ TEMPLATE = {
                 "classes, so the measure of what adaptation *added* is the **things PQ** (0 for both trivial predictors), not the "
                 "mean PQ or the stuff PQ.\n\n"
                 "**Predict:** the re-headed model still has COCO's mask branch. Why does it score 0.0 PQ before training?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nBecause PQ is class-aware and the new five-class head is random: the masks may be plausible, but every class is a guess. In both recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026): re-headed baseline PQ 0.0, trivial all-`sky` PQ 0.103.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nBecause PQ is class-aware and the new five-class head is random: the masks may be plausible, but every class is a guess. In the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026): re-headed baseline PQ 0.0, trivial all-`sky` PQ 0.103; yours may differ.\n\n</details>"
             ),
             "code": (
                 'HOLDOUT = 0.25  # @param {{type:"number"}}\n'
