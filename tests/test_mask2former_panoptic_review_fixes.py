@@ -295,16 +295,16 @@ def test_high_bit_depth_images_are_refused_naming_the_mode(monkeypatch, tmp_path
     assert image.mode == mode
     path = tmp_path / "deep.tif"
     image.save(path)
-    with pytest.raises(ValueError, match=rf"has image mode '{re.escape(mode)}' \(16- or 32-bit samples\).*Save it as an 8-bit"):
+    with pytest.raises(ValueError, match=rf"^deep\.tif: image mode '{re.escape(mode)}' \(16- or 32-bit samples\).*Save it as an 8-bit"):
         _section4(monkeypatch, tmp_path, BYOD_PATH=str(path))
 
 
 def test_unreadable_file_missing_path_cancelled_upload_and_no_colab_are_actionable(monkeypatch, tmp_path):
     text = tmp_path / "notes.txt"
     text.write_text("not an image", encoding="utf-8")
-    with pytest.raises(ValueError, match=r"notes\.txt is not an image Pillow can read .*16-4096 px.*re-run from this cell"):
+    with pytest.raises(ValueError, match=r"^notes\.txt: not an image Pillow can read .*16-4096 px.*re-run from this cell"):
         _section4(monkeypatch, tmp_path, BYOD_PATH=str(text))
-    with pytest.raises(FileNotFoundError, match="is not a file in this runtime"):
+    with pytest.raises(ValueError, match="^nope.jpg: BYOD_PATH .* is not a file in this runtime"):
         _section4(monkeypatch, tmp_path, BYOD_PATH=str(tmp_path / "nope.jpg"))
     _fake_colab(monkeypatch, {})
     with pytest.raises(ValueError, match=r"Upload exactly one image \(received 0: nothing: the upload was cancelled or empty\)"):
@@ -313,10 +313,10 @@ def test_unreadable_file_missing_path_cancelled_upload_and_no_colab_are_actionab
     with pytest.raises(ValueError, match=r"received 2: a\.png, b\.png"):
         _section4(monkeypatch, tmp_path)
     _fake_colab(monkeypatch, {"notes.txt": b"not an image"})
-    with pytest.raises(ValueError, match="is not an image Pillow can read"):
+    with pytest.raises(ValueError, match="not an image Pillow can read"):
         _section4(monkeypatch, tmp_path)
     monkeypatch.setitem(sys.modules, "google.colab", None)
-    with pytest.raises(RuntimeError, match="needs the Google Colab upload dialog. Elsewhere, set BYOD_PATH"):
+    with pytest.raises(ValueError, match=r"^\(no file\): USE_BYOD = True with an empty BYOD_PATH needs the Google Colab upload dialog. Elsewhere, set BYOD_PATH"):
         _section4(monkeypatch, tmp_path)
 
 
