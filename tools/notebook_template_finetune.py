@@ -13,6 +13,8 @@ TEMPLATE = {
     "notebook_name": "mask2former_panoptic_finetune_colab.ipynb",
     "profile": "E2E",
     "mode": "GUIDED",
+    "notebook_spec": "2.5",
+    "notebook_kind": "TUTORIAL",
     "isolated_runtime": True,
     "infrastructure_labels": True,
     "collapse_model_cell": True,
@@ -207,7 +209,10 @@ TEMPLATE = {
                 "`split_records` is a seeded permutation into a training part and a held-out part; every scene is drawn "
                 "independently, so a random split is the right kind (SPL3). The split happens before any weight is touched and the "
                 "held-out records are never shown to `finetune`, so the score in Section 8 is a score on scenes the adapted model "
-                "has not seen. The 6 held-out scenes are used once, to report; nothing is selected on them (SPL6/SPL7).\n\n"
+                "has not seen. On the default path the 6 held-out scenes are used once, to report; nothing is selected on them "
+                "(SPL6/SPL7). Section 13 and the **Next experiments** re-score the same six scenes after each change, so "
+                "once you compare settings there they act as a validation set, and only the default-path number is read as "
+                "a held-out result.\n\n"
                 "`Mask2FormerPanopticPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SHAPE_CLASSES, stuff_names=SHAPE_STUFF, seed=SEED)` "
                 "loads the same verified snapshot (no download: the files are already staged and re-verified) but rebuilds the "
                 "class predictor for the five-class vocabulary. It records exactly which tensors could not transfer — "
@@ -224,7 +229,7 @@ TEMPLATE = {
                 "classes, so the measure of what adaptation *added* is the **things PQ** (0 for both trivial predictors), not the "
                 "mean PQ or the stuff PQ.\n\n"
                 "**Predict:** the re-headed model still has COCO's mask branch. Why does it score 0.0 PQ before training?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nBecause PQ is class-aware and the new five-class head is random: the masks may be plausible, but every class is a guess. The recorded run: re-headed baseline PQ 0.0, trivial all-`sky` PQ 0.103.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nBecause PQ is class-aware and the new five-class head is random: the masks may be plausible, but every class is a guess. In the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026): re-headed baseline PQ 0.0, trivial all-`sky` PQ 0.103; yours may differ.\n\n</details>"
             ),
             "code": (
                 'HOLDOUT = 0.25  # @param {{type:"number"}}\n'
@@ -274,7 +279,9 @@ TEMPLATE = {
                 "of the upstream 12,544 (a CPU-time decision recorded in the artifact); learning rate 1e-4 and weight decay 0.05 "
                 "(the upstream optimizer values); batch size 2; 6 epochs over 18 scenes = 54 steps; float32; **the Swin-T backbone "
                 "is frozen** and kept in eval mode, so 19.9 M of the 47.4 M parameters train (the pixel decoder, the transformer "
-                "decoder and the new head). The smoke run's mean epoch loss went 33.7 → 6.8. **The loss history is optimisation "
+                "decoder and the new head). The mean epoch loss (printed by this cell) went from 33.588 to 6.400 and to 6.659 in "
+                "the Colab T4 runs of blob `88249847`, `e5804e0`, 7 October 2026 and blob `6a8423ea`, `a7506f9`, 25 October 2026, and from 33.612 to 6.263 in the run of blob `14cf2531`, `95ba5ce`, 25 October 2026; yours may differ (33.7 → 6.8 in the CPU smoke run of the earlier "
+                "blob `baa9ab41`). **The loss history is optimisation "
                 "evidence only** (FT7): whether the model learned the task is Section 8's question.\n\n"
                 "**Re-running this cell never stacks training.** If `adapter` has already been fine-tuned, the cell rebuilds the "
                 "re-headed model from the verified snapshot with the same `SEED` (so the Section 6 baseline still describes it) "
@@ -282,7 +289,7 @@ TEMPLATE = {
                 "received. To change `EPOCHS` (Section 5), `LEARNING_RATE`, `BATCH_SIZE` or `FREEZE_BACKBONE` (this cell), edit "
                 "the field, then re-run this cell and Section 8 — or select Section 6 and choose **Runtime → Run after**.\n\n"
                 "**Predict:** will the loss fall by a factor of about 2, 5 or 10 over 6 epochs?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nAbout 5: the recorded T4 run went 33.6 → 6.7 mean epoch loss in 54 steps (16.2 s). That says the optimiser worked; it does not say the segmentation is right.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nIn the recorded runs, about 5: in the Colab T4 runs of blob `88249847`, `e5804e0`, 7 October 2026 and blob `6a8423ea`, `a7506f9`, 25 October 2026 the mean epoch loss went from 33.588 to 6.400 and to 6.659, and in the run of blob `14cf2531`, `95ba5ce`, 25 October 2026 from 33.612 to 6.263, in 54 steps (15 s of training in each of the two runs of 25 October). That says the optimiser worked; it does not say the segmentation is right.\n\n</details>"
             ),
             "code": (
                 'LEARNING_RATE = 1e-4  # @param {{type:"number"}}\n'
@@ -320,14 +327,17 @@ TEMPLATE = {
                 "the all-`sky` predictor (0.103) and past the horizon-split predictor (0.318). What it is not: a benchmark. The "
                 "held-out split is six scenes from the same generator with the same three shapes, so a high PQ says the task is "
                 "easy and the adaptation worked — not that the model would segment your photographs. Read the **things PQ** as the "
-                "measure of what adaptation added: both trivial predictors score 0 on the things, and the stuff PQ near 1.0 is "
-                "only a little above the horizon predictor's 0.796.\n\n"
-                "**Per-class values depend on the device.** The mean held-out PQ was 0.866 on both recorded runs, but the "
-                "per-class and SQ/RQ values moved: on the CPU smoke run SQ 0.938, RQ 0.911, `box` 0.509, `disc` 0.841, "
-                "`triangle` 0.981; on the Kaggle T4 run SQ 0.985, RQ 0.880, `box` 0.397, `disc` 0.951, `triangle` 0.986 (the "
-                "head's CUDA initialisation and kernels differ). Your run will land near one of these, not on either. `box` was "
-                "the weakest thing class on both devices; that its straight edges are confused with the ground band is a "
-                "**hypothesis** this notebook does not test. The report is written to `outputs/{stem}_evaluation_report.json`.\n\n"
+                "measure of what adaptation added: both trivial predictors score 0 on the things; compare the stuff PQ printed above "
+                "with the horizon predictor's 0.796.\n\n"
+                "**Per-class values vary from run to run;** the report printed above is your run's. Recorded runs: "
+                "the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) gave held-out PQ 0.9264 (SQ 0.9747, RQ 0.9492; "
+                "`box` 0.842, `disc` 0.809, `triangle` 0.983) and the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) gave 0.9625 (SQ 0.9906, RQ 0.9714; `box` 0.844, `disc` 0.99, `triangle` 0.981) and the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) gave 0.9179 (SQ 0.9843, RQ 0.9314; `box` 0.84, `disc` 0.767, `triangle` 0.985); the earlier blob `baa9ab41` gave 0.866 on both a CPU smoke run "
+                "(SQ 0.938, RQ 0.911, `box` 0.509, `disc` 0.841, `triangle` 0.981) and a Kaggle T4 run (SQ 0.985, RQ 0.880, "
+                "`box` 0.397, `disc` 0.951, `triangle` 0.986). The weakest thing class changed between runs (`box` in the two "
+                "runs of `baa9ab41` and in the run of `6a8423ea`, `disc` in the runs of `88249847` and `14cf2531`), and with six held-out scenes — four or five instances per thing class — "
+                "one missed segment moves a class's PQ by a large step. These differences are therefore not attributed to the "
+                "device or to any other single cause: the notebook has no seed-dispersion estimate (the `DATASET_SEED` "
+                "experiment in Section 13 is how to see one), and your run may differ from all four. The report is written to `outputs/{stem}_evaluation_report.json`.\n\n"
                 "**Warnings you will see, and why they are expected:** `RuntimeWarning: overflow encountered in exp` comes from "
                 "the carried post-processing's sigmoid on large negative mask logits (it saturates to 0, which is the intended "
                 "value — harmless); the processor warning about `_max_size` / `reduce_labels` names keys in the pinned "
@@ -335,7 +345,7 @@ TEMPLATE = {
                 "processor is used (none is needed); and `You should probably TRAIN this model` appears when Section 6 rebuilds "
                 "the class head — it is exactly what Section 7 then does.\n\n"
                 "**Predict:** which class will stay weakest after adaptation, and why?\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\n`box`, on both recorded devices: the Kaggle T4 run reached PQ 0.866 overall (sky 0.998, ground 0.999, disc 0.951, triangle 0.986) with 0.397 on `box`; the CPU smoke run also reached 0.866 with `box` 0.509 and `disc` 0.841. Why `box` is weakest is not established here (a hypothesis: its straight edges resemble the ground band). Six held-out scenes give no dispersion estimate.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nOne run cannot settle it. In the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026) the weakest thing class was `disc` (0.809; `box` 0.842, `triangle` 0.983, sky 0.998, ground 0.999, overall 0.9264); in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) it was `box` (0.844; `disc` 0.99, `triangle` 0.981, sky 0.998, ground 0.999, overall 0.9625); in the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) it was `disc` (0.767; `box` 0.84, `triangle` 0.985, sky 0.998, ground 0.999, overall 0.9179); in the two runs of the earlier blob `baa9ab41` it was `box` (0.397 on the Kaggle T4, 0.509 on CPU). With four or five instances per thing class one missed segment changes the ranking, so treat any answer as a statement about your run, not a property of the class. Six held-out scenes give no dispersion estimate.\n\n</details>"
             ),
             "code": (
                 "t0 = time.time()\n"
@@ -364,10 +374,10 @@ TEMPLATE = {
                 "`shape_dataset` with a **different seed** produces scenes the model has never seen, in training or in the "
                 "held-out split. Each is validated through `validate_inputs` (the inference contract: image type, sides, "
                 "thresholds) and segmented with the adapted pipeline — the same `segment` call, the same post-processing, now "
-                "over the five-class vocabulary. Their instance maps are known too, so the cell reports PQ on them as a second, "
-                "independent sample (not used for any decision). The smoke run's first new scene came back as `sky`, `ground` and a "
-                "`box`, with no void.\n\n"
-                + "<details><summary>Check your reasoning</summary>\n\nIs the new-data PQ an independent test? Yes for this drawn task — different seed, never seen — and the recorded run scored 0.954 on it; but it comes from the same generator, so it says nothing about photographs.\n\n</details>"
+                "over the five-class vocabulary. Their instance maps are known too, so the cell reports PQ on them as a second sample "
+                "from a different seed (not used for any decision). In the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026) the first new scene "
+                "came back as `ground`, `sky` and a `box`, with no void; this can vary between runs.\n\n"
+                + "<details><summary>Check your reasoning</summary>\n\nIs the new-data PQ an independent test? Only in a narrow sense: the scenes are new (different seed, never seen), but they come from the same generator, there are four of them and there is no dispersion estimate, so it is a second sample of the same drawn task, not an independent test, and it says nothing about photographs. It scored 0.9093 in the Colab T4 run of blob `88249847` (`e5804e0`, 7 October 2026), 0.9014 in the Colab T4 run of blob `6a8423ea` (`a7506f9`, 25 October 2026) and 0.8712 in the Colab T4 run of blob `14cf2531` (`95ba5ce`, 25 October 2026) (0.954 in the Kaggle T4 run of the earlier blob `baa9ab41`); the PQ printed above is your run's.\n\n</details>"
             ),
             "code": (
                 'NEW_DATA_SEED = 123  # @param {{type:"integer"}}\n\n'
@@ -400,7 +410,7 @@ TEMPLATE = {
                 "model and asserts the PQ is identical and the maps agree pixel for pixel (VER1–VER5); a reload that quietly lost "
                 "the adaptation would stop the notebook here. Finally it tampers with a copy of the manifest and confirms the "
                 'copy is refused, because "it loads" is only evidence if something that should not load is also tried.\n\n'
-                + "<details><summary>Check your reasoning</summary>\n\nWhat would a reload that lost the adaptation look like? A PQ back near 0.0. The recorded run reproduced PQ 0.866 exactly with pixel agreement 1.0, and the tampered manifest was refused. These asserts are contract checks, not quality checks.\n\n</details>"
+                + "<details><summary>Check your reasoning</summary>\n\nWhat would a reload that lost the adaptation look like? A PQ back near 0.0. In each recorded Colab T4 run (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026) the reload reproduced the adapted PQ exactly (0.926413, 0.962504 and 0.917899) with pixel agreement 1.0, and the tampered manifest was refused. These asserts are contract checks, not quality checks.\n\n</details>"
             ),
             "code": (
                 "import shutil\n"
@@ -597,10 +607,12 @@ TEMPLATE = {
         "## Interpretation and limits\n\n"
         "The held-out panoptic quality is a **sample metric on drawn shapes**: six scenes from the same generator as the "
         "training scenes, three thing classes with distinct silhouettes, two stuff classes that always occupy the same halves of "
-        "the image. Reaching PQ near 0.9 from 0.0 (0.866 on both the CPU smoke run and the Kaggle T4 run) shows that the re-headed "
+        "the image. Reaching PQ between 0.866 and 0.9625 from 0.0 in the recorded runs (0.9264, 0.9625 and 0.9179 in "
+        "the three recorded Colab T4 runs (blob `88249847`, `e5804e0`, 7 October 2026; blob `6a8423ea`, `a7506f9`, 25 October 2026; blob `14cf2531`, `95ba5ce`, 25 October 2026); 0.866 in both recorded runs of the earlier blob `baa9ab41`) shows that the re-headed "
         "model, the upstream set loss, the bounded loop, the evaluation and the artifact boundary all work together; it does not "
-        "show that 18 photographs of your own would train as easily, that the frozen backbone suits your domain, or that `box` "
-        "(the weakest thing class on both devices: 0.509 on CPU, 0.397 on the T4) would not need more data. The horizon-split "
+        "show that 18 photographs of your own would train as easily, that the frozen backbone suits your domain, or that the "
+        "weakest thing class (`disc` at 0.809 in the 7 October Colab T4 run, `box` at 0.844 in the run of `6a8423ea` and `disc` at 0.767 in the run of `14cf2531` on 25 October; `box` at 0.397 on the Kaggle T4 and 0.509 on CPU for the earlier blob `baa9ab41`) would not "
+        "need more data. The horizon-split "
         "predictor already scores 0.318 without learning, so the stuff PQ says little; the things PQ (0 for every trivial "
         "predictor) is where the adaptation shows. **Training loss is not task evidence**, the "
         "class scores remain uncalibrated softmaxes, and the adapted model has forgotten COCO's vocabulary entirely — it knows five "
@@ -645,7 +657,8 @@ TEMPLATE = {
         "- **Frozen backbone:** the Swin-T feature extractor does not train; the pixel decoder, transformer decoder and head do.\n"
         "- **PQ = SQ × RQ:** panoptic quality — mean IoU of matched segments times a recognition score that penalises misses and false segments; class-aware here.\n"
         "- **Trivial baselines:** predictors that learn nothing — all-`sky`, and the horizon split (sky above the training split's mean horizon row, ground below). They bound what the stuff PQ can mean; the things PQ, 0 for both, is where learning shows.\n"
-        "- **Held-out split:** scenes never shown to `finetune` and used once, to report.\n"
+        "- **Held-out split:** scenes never shown to `finetune`; on the default path used once, to report (the Section 13 "
+        "activity re-uses them as a validation set).\n"
         "- **Artifact / cold reload:** the self-describing directory with digests, rebuilt from disk alone to prove it is complete.\n"
         "- **Isolated environment:** the separate hash-locked Python environment built in Section 1; every later cell runs there.\n\n"
         "## Conclusion (your notes)\n\n"
@@ -655,12 +668,13 @@ TEMPLATE = {
         "4. What would you need before adapting this model to photographs of your own?\n\n"
         "**Your notes:**\n\n"
         "## References\n\n"
-        "- Repository README: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/README.md\n"
-        "- Repository model card: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/MODEL_CARD.md\n"
-        "- Weight provenance: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/docs/WEIGHTS.md\n"
-        "- Upstream model: https://huggingface.co/{MODEL_ID}\n"
-        "- Upstream code: https://github.com/facebookresearch/Mask2Former\n"
-        "- Masked-attention Mask Transformer for Universal Image Segmentation (Cheng et al., 2021): https://arxiv.org/abs/2112.01527\n"
-        "- Panoptic Segmentation (Kirillov et al., 2019): https://arxiv.org/abs/1801.00868"
+        "References follow the IEEE style.\n\n"
+        "[1] B. Cheng, I. Misra, A. G. Schwing, A. Kirillov, and R. Girdhar, \"Masked-attention mask transformer for universal image segmentation,\" in *Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)*, 2022, pp. 1290–1299. [Online]. Available: https://arxiv.org/abs/2112.01527\n\n"
+        "[2] A. Kirillov, K. He, R. Girshick, C. Rother, and P. Dollár, \"Panoptic segmentation,\" in *Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)*, 2019, pp. 9404–9413. [Online]. Available: https://arxiv.org/abs/1801.00868\n\n"
+        "[3] Meta AI, \"{MODEL_ID},\" Hugging Face model card. [Online]. Available: https://huggingface.co/{MODEL_ID}\n\n"
+        "[4] Meta AI, \"Mask2Former,\" upstream code, GitHub. [Online]. Available: https://github.com/facebookresearch/Mask2Former\n\n"
+        "[5] K. Valcorza, \"mask2former-panoptic-pipeline: README,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/README.md\n\n"
+        "[6] K. Valcorza, \"mask2former-panoptic-pipeline: model card,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/MODEL_CARD.md\n\n"
+        "[7] K. Valcorza, \"mask2former-panoptic-pipeline: weight provenance,\" GitHub. [Online]. Available: https://github.com/kurtvalcorza/mask2former-panoptic-pipeline/blob/main/docs/WEIGHTS.md"
     ),
 }

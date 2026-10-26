@@ -241,7 +241,7 @@ COMMON_CODE_MARKERS = (
     "files.upload()",
 )
 COMMON_MARKDOWN_MARKERS = (
-    f"**Notebook specification:** DIMER Notebook Specification {NOTEBOOK_SPEC} — **standalone** (§4)",
+    "**Notebook specification:** DIMER Notebook Specification ",
     "**Mode:** `",
     "**Run all:**",
     "**Bring Your Own Data:**",
@@ -258,7 +258,7 @@ COMMON_MARKDOWN_MARKERS = (
     "without the repository being",
     "It does **not** establish benchmark superiority",
     "## References",
-    f"- Repository model card: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",
+    f"https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",
 )
 # Patterns that must never appear in tutorial code (comment-stripped), in any cell.
 FORBIDDEN_PATTERNS = (
@@ -498,10 +498,15 @@ def _validate_notebook_structure(
     profile = dimer.get("notebook_profile")
     _check(profile in ALLOWED_PROFILES, f"{path.name}: invalid metadata.dimer.notebook_profile {profile!r}")
     _check(profile == spec["profile"], f"{path.name}: profile {profile!r} != declared {spec['profile']!r}")
-    spec = dimer.get("notebook_spec", dimer.get("notebook_spec_version"))
+    declared = dimer.get("notebook_spec", dimer.get("notebook_spec_version"))
+    expected = _template.get("notebook_spec", NOTEBOOK_SPEC)
     _check(
-        spec == NOTEBOOK_SPEC,
-        f"{path.name}: metadata.dimer must declare notebook spec version '{NOTEBOOK_SPEC}'",
+        declared == expected,
+        f"{path.name}: metadata.dimer must declare notebook spec version '{expected}'",
+    )
+    _check(
+        dimer.get("notebook_kind") == _template.get("notebook_kind"),
+        f"{path.name}: metadata.dimer.notebook_kind must be {_template.get('notebook_kind')!r}",
     )
     _check(
         dimer.get("notebook_mode") in ("REFERENCE", "GUIDED", "WORKSHOP"),
