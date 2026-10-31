@@ -247,7 +247,7 @@ def test_swp_a_only_contract_asserts_remain():
 
 
 def test_swp_b_finetune_byod_input_paths_and_uploads(monkeypatch, tmp_path):
-    helper = _helper(FT, "BYOD_DATASET_PATH = ''", "def byod_input(", "\n\n\nprint('BYOD dataset schema:'")
+    helper = _helper(FT, "BYOD_DATASET_PATH = ''", "class BYODRefusal(", "\n\n\nprint('BYOD dataset schema:'")
     ns = {"Path": Path}
     exec(helper, ns)
     byod_input = ns["byod_input"]
@@ -255,12 +255,12 @@ def test_swp_b_finetune_byod_input_paths_and_uploads(monkeypatch, tmp_path):
     folder = tmp_path / "labelled"
     folder.mkdir()
     assert byod_input(str(folder), "a dataset", "BYOD_DATASET_PATH") == ("labelled", folder)
-    with pytest.raises(FileNotFoundError, match="BYOD_DATASET_PATH .*nope.* does not exist"):
+    with pytest.raises(ValueError, match="^nope: BYOD_DATASET_PATH .*nope.* does not exist"):
         byod_input(str(tmp_path / "nope"), "a dataset", "BYOD_DATASET_PATH")
-    with pytest.raises(RuntimeError, match="BYOD_IMAGE_PATH is empty and this runtime has no Colab upload dialog"):
+    with pytest.raises(ValueError, match="BYOD_IMAGE_PATH is empty and this runtime has no Colab upload dialog"):
         byod_input("", "one image file", "BYOD_IMAGE_PATH")
     _colab(monkeypatch, lambda: {})
-    with pytest.raises(RuntimeError, match="got 0 .*upload cancelled or empty"):
+    with pytest.raises(ValueError, match="got 0 .*upload cancelled or empty"):
         byod_input("", "one image file", "BYOD_IMAGE_PATH")
     _colab(monkeypatch, lambda: {"d.zip": b"PK"})
     assert byod_input("", "a dataset", "BYOD_DATASET_PATH") == ("d.zip", b"PK")
@@ -268,8 +268,8 @@ def test_swp_b_finetune_byod_input_paths_and_uploads(monkeypatch, tmp_path):
 
 def test_swp_b_finetune_dataset_branch_refuses_a_bad_archive_with_its_name():
     source = _cell(_nb(FT), "BYOD_DATASET_PATH = ''")
-    assert "raise ValueError(f'{archive}: not a zip file; give a zip or a directory') from None" in source
-    assert "raise ValueError(f'{archive}: no dataset.json found;" in source
+    assert "raise BYODRefusal(archive, 'not a zip file; give a zip or a directory and re-run this cell') from None" in source
+    assert "raise BYODRefusal(archive, 'no dataset.json found;" in source
 
 
 def test_swp_g_checkpoint_answers_agree_with_the_recorded_runs():

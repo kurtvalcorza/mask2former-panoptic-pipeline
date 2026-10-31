@@ -384,12 +384,12 @@ def test_m1_byod_refusals_name_the_file_the_condition_and_the_fix(tmp_path, monk
         _section12(ns, USE_BYOD_DATASET=True, BYOD_DATASET_PATH=str(notes))
     with pytest.raises(ValueError, match=r"^notes\.txt: not an image Pillow can read \(UnidentifiedImageError\).*re-run this cell"):
         _section12(ns, USE_BYOD_IMAGE=True, BYOD_IMAGE_PATH=str(notes))
-    with pytest.raises(FileNotFoundError, match=r"BYOD_DATASET_PATH .*missing.* does not exist"):
+    with pytest.raises(ValueError, match=r"^missing: BYOD_DATASET_PATH .*missing.* does not exist"):
         _section12(ns, USE_BYOD_DATASET=True, BYOD_DATASET_PATH=str(tmp_path / "missing"))
-    with pytest.raises(RuntimeError, match="BYOD_IMAGE_PATH is empty and this runtime has no Colab upload dialog"):
+    with pytest.raises(ValueError, match=r"^\(no file\): BYOD_IMAGE_PATH is empty and this runtime has no Colab upload dialog"):
         _section12(ns, USE_BYOD_IMAGE=True)
     _colab(monkeypatch, {})
-    with pytest.raises(RuntimeError, match=r"got 0 \(upload cancelled or empty\)"):
+    with pytest.raises(ValueError, match=r"^\(no file\): expected exactly one uploaded file .*got 0 \(upload cancelled or empty\)"):
         _section12(ns, USE_BYOD_DATASET=True)
     _colab(monkeypatch, {"notes.txt": b"hello"})
     with pytest.raises(ValueError, match=r"^notes\.txt: not an image Pillow can read"):
