@@ -340,3 +340,117 @@ def test_scripted_finetune_refusal_input(tmp_path, monkeypatch):
         _section12(ns, USE_BYOD_IMAGE=True, BYOD_IMAGE_PATH=str(hostname))
     (line,) = caught.value._render_traceback_()
     assert line.startswith("Refused: hostname: not an image Pillow can read (UnidentifiedImageError)")
+
+
+# --- the catches are narrow: only bad input is refused; an internal TypeError/KeyError/OSError keeps its traceback --
+
+
+def test_the_byod_catches_are_narrow_in_the_notebook_source():
+    import re
+
+    inference = _cell(INFERENCE, INFERENCE_BYOD_CELL)
+    wrap = inference[inference.index("if USE_BYOD:") : inference.index("else:\n    # Deterministic drawing")]
+    assert re.findall(r"^\s*except (.+?)(?: as \w+)?:$", wrap, flags=re.M) == ["OSError", "BYODRefusal", "ValueError"]
+    assert "        try:\n            image_name, image_bytes = byod_bytes(BYOD_PATH)\n        except OSError as exc:\n" in wrap
+    finetune = _cell(FINETUNE, FINETUNE_BYOD_CELL)
+    branches = finetune.split("if USE_BYOD_IMAGE:\n", 1)[1]
+    caught = re.findall(r"^\s*except (.+?)(?: as \w+)?:$", branches, flags=re.M)
+    assert caught == ["BYODRefusal", "ValueError", "zipfile.BadZipFile", "(OSError, zipfile.BadZipFile)", "BYODRefusal", "ValueError"], caught
+    loader = finetune[finetune.index("def byod_load_dir(") : finetune.index("print('BYOD dataset schema:'")]
+    assert "    except TypeError as exc:" in loader
+
+
+def _corrupt_zip(path: Path) -> str:
+    import io
+    import zipfile
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:
+        archive.writestr("dataset.json", "x" * 64)
+    data = bytearray(buffer.getvalue())
+    data[data.index(b"x" * 64)] = ord("y")  # the stored bytes no longer match their CRC-32
+    path.write_bytes(bytes(data))
+    return path.name
+
+
+@pytest.mark.parametrize("case", ["dataset.json is a list", "corrupt zip"])
+def test_finetune_real_bad_dataset_is_still_one_refused_line(tmp_path, monkeypatch, case):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    ns = _byod_namespace(tmp_path, monkeypatch)
+    _seed_byod(ns, tmp_path)
+    if case == "corrupt zip":
+        name, rule = _corrupt_zip(tmp_path / "bad.zip"), "the dataset cannot be read (BadZipFile: Bad CRC-32"
+    else:
+        (tmp_path / "listed").mkdir()
+        (tmp_path / "listed" / "dataset.json").write_text("[1, 2]", encoding="utf-8")
+        name, rule = "listed", "dataset.json holds a value of the wrong type (list indices must be integers"
+    with pytest.raises(ValueError) as caught:
+        _section12(ns, USE_BYOD_DATASET=True, BYOD_DATASET_PATH=name)
+    assert getattr(caught.value, "dimer_refusal", False), f"not a refusal: {caught.value!r}"
+    (line,) = caught.value._render_traceback_()
+    assert line.startswith(f"Refused: {name}: {rule}") and "\n" not in line, line
+    assert not set(BYOD_EARLIER) & set(ns)
+
+
+def test_inference_unreadable_file_is_still_one_refused_line(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    source = _cell(INFERENCE, INFERENCE_BYOD_CELL).replace("        return path.name, path.read_bytes()\n", "        raise PermissionError(13, 'Permission denied', str(path))\n", 1)
+    with pytest.raises(ValueError) as caught:
+        _section4(monkeypatch, tmp_path, _image(tmp_path / "locked.png"), source)
+    (line,) = caught.value._render_traceback_()
+    assert line.startswith("Refused: locked.png: the file cannot be read (PermissionError: "), line
+    assert not (tmp_path / "outputs" / EARLIER_FILES[0]).exists()
+
+
+@pytest.mark.parametrize("error", [TypeError("internal helper bug"), OSError("internal I/O bug")], ids=["TypeError", "OSError"])
+def test_inference_internal_error_after_the_read_keeps_its_traceback(monkeypatch, tmp_path, error):
+    import traceback
+
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    source = _cell(INFERENCE, INFERENCE_BYOD_CELL).replace("def byod_image(name, data):\n", "def byod_image(name, data):\n    raise INJECTED\n", 1)
+    monkeypatch.setattr(samples_module, "INJECTED", error, raising=False)
+    with pytest.raises(type(error)) as caught:
+        _section4(monkeypatch, tmp_path, _image(tmp_path / "ok.png"), source)
+    assert caught.value is error and not getattr(caught.value, "dimer_refusal", False)
+    assert "byod_image" in "".join(traceback.format_exception(caught.value))
+    assert (tmp_path / "outputs" / EARLIER_FILES[0]).exists()  # nothing is removed for an internal error
+
+
+@pytest.mark.parametrize("error", [TypeError("internal helper bug"), OSError("internal I/O bug")], ids=["TypeError", "OSError"])
+def test_finetune_internal_error_in_the_image_branch_keeps_its_traceback(tmp_path, monkeypatch, error):
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    ns = _byod_namespace(tmp_path, monkeypatch)
+    Image.new("RGB", (64, 48)).save(tmp_path / "ok.png")
+    _seed_byod(ns, tmp_path)
+
+    def broken_validate_inputs(image, **kwargs):
+        raise error
+
+    ns["validate_inputs"] = broken_validate_inputs
+    with pytest.raises(type(error)) as caught:
+        _section12(ns, USE_BYOD_IMAGE=True, BYOD_IMAGE_PATH="ok.png")
+    assert caught.value is error and not getattr(caught.value, "dimer_refusal", False)
+    assert ns["byod_evaluation"] == "old"  # nothing is cleared for an internal error
+
+
+@pytest.mark.parametrize("error", [TypeError("internal helper bug"), KeyError("internal key"), OSError("internal I/O bug")], ids=["TypeError", "KeyError", "OSError"])
+def test_finetune_internal_error_in_the_dataset_branch_keeps_its_traceback(tmp_path, monkeypatch, error):
+    import traceback
+
+    from test_mask2former_panoptic_finetune_review_fixes import _write_dataset
+
+    monkeypatch.setitem(sys.modules, "google.colab", None)
+    ns = _byod_namespace(tmp_path, monkeypatch)
+    _write_dataset(tmp_path / "labelled")
+    _seed_byod(ns, tmp_path)
+
+    def broken_split(records, **kwargs):
+        raise error
+
+    ns["split_records"] = broken_split
+    with pytest.raises(type(error)) as caught:
+        _section12(ns, USE_BYOD_DATASET=True, BYOD_DATASET_PATH=str(tmp_path / "labelled"))
+    assert caught.value is error and not getattr(caught.value, "dimer_refusal", False)
+    rendered = "".join(traceback.format_exception(caught.value))
+    assert rendered.startswith("Traceback") and "broken_split" in rendered and "Refused:" not in rendered
+    assert ns["byod_evaluation"] == "old"  # nothing is cleared for an internal error
