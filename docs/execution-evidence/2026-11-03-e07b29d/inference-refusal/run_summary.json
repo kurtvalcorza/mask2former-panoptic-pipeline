@@ -1,0 +1,71 @@
+{
+  "repo": "mask2former-panoptic-pipeline",
+  "sha": "e07b29da2c0a619f0bf10997f6cbf1555bc5a56e",
+  "notebook": "tutorials/mask2former_panoptic_colab.ipynb",
+  "blob": "353ec10e41046da889242b13611c3be0d44882c3",
+  "gpu": "T4",
+  "session": "suite-mask2former-e07b29d-c916",
+  "started_utc": "2026-11-03T00:23:46+00:00",
+  "runner": "Colab CLI `colab exec -f` on a fresh session (not a browser Run all)",
+  "overrides": [
+    {
+      "name": "USE_BYOD",
+      "from": "False",
+      "to": "True"
+    },
+    {
+      "name": "BYOD_PATH",
+      "from": "\\\"\\\"",
+      "to": "'/etc/hostname'"
+    }
+  ],
+  "run_copy_blob": "49b89d50ca5496f5c35897799b0853ce77e8650d",
+  "run_copy_sha256": "20de2f050142642f4fbd8b1b07c5f9be635e9aee1bd2aa18022508306aa38def",
+  "run_copy_note": "refusal run: the run copy is the committed notebook with the listed assignment overrides, cut immediately after the refusal cell and re-serialised (nbformat layout); input_unchanged compares against that copy",
+  "truncated_after_cell": "mask2former_panoptic-15",
+  "refusal_cell_ref": "mask2former_panoptic-15",
+  "refusal_cell_index": 7,
+  "cells_dropped": 14,
+  "code_cells_dropped": 6,
+  "original_sha256": "2932aa94a3d3c6fa616331bafba98793d804baab7232025a46e8417fb610ac59",
+  "status": "[suite-mask2former-e07b29d-c916] gpu-t4-s-usw4b1-1zgfyiqpdp2b7 | Hardware: T4 | Shape: Standard | Variant: GPU | Status: IDLE",
+  "exec_exit_code": 0,
+  "stopped": true,
+  "stop_verified": true,
+  "wall_s": 99.5,
+  "input_unchanged": true,
+  "executed_file": "mask2former_panoptic_colab_e07b29d_colab-cli-t4_output.ipynb",
+  "log_cells": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "log_total": 7,
+  "code_cells": 7,
+  "executed_cells": 5,
+  "errors": [
+    {
+      "cell": "mask2former_panoptic-15",
+      "ename": "IsolatedCellRefusal",
+      "evalue": "hostname: not an image Pillow can read (UnidentifiedImageError). Expected one image file Pillow can read (PNG, JPEG, WebP, ...) with 8 bits per channel and sides of 16-4096 px; fix it, keep USE_BYOD = True, and re-run from this cell (Runtime -> Run after) (the earlier results of this session and its"
+    }
+  ],
+  "execution_counts": [],
+  "sequential": null,
+  "executed_sha256": "062a846c414b793d266d8d885c696db112f0c674103c1d992e2913fa29285000",
+  "log_sequential_complete": true,
+  "mode": "expect_refusal",
+  "refusal_line": "Refused: hostname: not an image Pillow can read (UnidentifiedImageError). Expected one image file Pillow can read (PNG, JPEG, WebP, ...) with 8 bits per channel and sides of 16-4096 px; fix it, keep USE_BYOD = True, and re-run from this cell (Runtime -> Run after) (the earlier results of this session and its outputs/ files were removed)",
+  "halting_cell_index": 7,
+  "halting_cell_id": "mask2former_panoptic-15",
+  "error_cells": [
+    7
+  ],
+  "refusal_fail_reasons": [],
+  "refusal_ok": true,
+  "verdict": "PASS"
+}
