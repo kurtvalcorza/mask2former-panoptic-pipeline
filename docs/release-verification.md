@@ -221,7 +221,7 @@ Printed by the default run (verbatim lines from the executed outputs):
 {'baseline_pq': 0.0, 'sq': 0.0, 'rq': 0.0, 'things_pq': 0.0, 'stuff_pq': 0.0, 'seconds': 0.8}
 {'trivial_horizon_split_pq': 0.3184, 'horizon_row': 160, 'stuff_pq': 0.7961, 'things_pq': 0.0, 'per_class': {'sky': 0.822, 'ground': 0.77, 'box': 0.0, 'disc': 0.0, 'triangle': 0.0}}
 mean epoch loss 33.588 -> 6.458 over 6 epochs (optimisation evidence only)
-### cell 11 id=mask2former_panoptic_finetune-24 :: "t0 = time.time()\nadapted = adapter.evaluate(held_out)\nprint({'adapted_pq': round"
+{'adapted_pq': 0.9595, 'sq': 0.9875, 'rq': 0.9714, 'things_pq': 0.9337, 'stuff_pq': 0.9983, 'seconds': 0.5}
 {'new_data_pq': 0.9865, 'n_images': 4}
 {'reloaded_pq': 0.959538, 'adapted_pq': 0.959538}
 {'pixel_agreement_first_held_out_scene': 1.0}
@@ -253,9 +253,98 @@ This run says nothing about the 1 cut cells, which did not run in it. Session `s
 
 Not exercised by these runs: an accepted BYOD input (REL12), a browser `Run all` of the interactive journeys (REL2), and every other open gate named in this file; these runs close none of them.
 
+### Hosted Colab T4 runs of blob `353ec10e` (2026-11-03) — `tutorials/mask2former_panoptic_colab.ipynb`
+
+These runs executed `main` at `e07b29da2c0a619f0bf10997f6cbf1555bc5a56e`, notebook `tutorials/mask2former_panoptic_colab.ipynb` blob `353ec10e41046da889242b13611c3be0d44882c3`, fetched at the 40-character SHA and Git-blob verified, with the Colab CLI (`colab exec -f`) on a fresh Colab Tesla T4 session: sequential CLI execution, not a browser `Run all` (the Colab CLI version is not recorded in `exec.log` or `run_summary.json`). Each `run_summary.json` records `verdict` `PASS`, `exec_exit_code` 0, `input_unchanged` true and `stop_verified` true (the VM was released), and the SHA-256 of each executed notebook equals the summary's `executed_sha256`.
+
+**One pass, no restart, 0 errors** (default path, 2026-11-03 00:20:18 UTC start). Default settings, no overrides; session `suite-mask2former-e07b29d-c916`; wall 148.6 s (`wall_s`); `code_cells` 13, all logged in order by `exec.log` (`executed_cells` 11: the cells that printed output); 0 errors. Retained evidence: [`execution-evidence/2026-11-03-e07b29d/inference/`](execution-evidence/2026-11-03-e07b29d/inference/).
+
+Printed by the default run (verbatim lines from the executed outputs):
+
+```text
+{'verified_files': 4, 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77'}
+pq       0.3304  (one reference map on a single image, no dispersion estimate)
+sq       0.9912  (one reference map on a single image, no dispersion estimate)
+rq       0.3333  (one reference map on a single image, no dispersion estimate)
+matches  {'region': {'tp': 1, 'fp': 0, 'fn': 4}}  (true/false positive and false negative segment counts behind pq)
+{'photo_verdict': 'not-measurable', 'photo_labels': [('cat', 0.9977, 0.1932), ('cat', 0.9966, 0.1709), ('remote', 0.9943, 0.0138), ('remote', 0.9531, 0.007), ('couch', 0.8111, 0.5665)]}
+```
+
+**Refused as designed** (DAT20 refusal record, 2026-11-03 00:23:46 UTC start, blob `353ec10e`). Overrides, set by `--set` on a copy of the blob: `USE_BYOD` `False` → `True` and `BYOD_PATH` `""` → `'/etc/hostname'`. The suite cut the run copy right after the refusing cell `mask2former_panoptic-15`, dropping 14 cells (6 of them code cells), which reproduces `Run all` stopping at the first error; the cut copy is `run_copy.ipynb`, SHA-256 `20de2f050142642f4fbd8b1b07c5f9be635e9aee1bd2aa18022508306aa38def` (Git blob `49b89d50`), equal to the summary's `run_copy_sha256`. Its 7 code cells were logged in order by `exec.log`; the earlier code cells completed without an error output; the refusing cell's only error output has `ename` `IsolatedCellRefusal` and no Python stack trace (its traceback is the single refusal line), and its output holds exactly one `Refused:` line:
+
+```text
+Refused: hostname: not an image Pillow can read (UnidentifiedImageError). Expected one image file Pillow can read (PNG, JPEG, WebP, ...) with 8 bits per channel and sides of 16-4096 px; fix it, keep USE_BYOD = True, and re-run from this cell (Runtime -> Run after) (the earlier results of this session and its outputs/ files were removed)
+```
+
+This run says nothing about the 14 cut cells, which did not run in it. Session `suite-mask2former-e07b29d-c916`, wall 99.5 s. Retained evidence: [`execution-evidence/2026-11-03-e07b29d/inference-refusal/`](execution-evidence/2026-11-03-e07b29d/inference-refusal/).
+
+**Local-path redaction.** Local paths were replaced byte-wise by `<local-run-dir>` (and the Colab CLI install path by `<colab-cli-tool-dir>/`, where present) before the first commit; each executed notebook and run copy was checked against its `run_summary.json` before any edit.
+
+| File (under `docs/execution-evidence/2026-11-03-e07b29d/inference/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `mask2former_panoptic_colab_e07b29d_colab-cli-t4_default.ipynb` | `e48c4b791f9ec53f107dff3d016f014c5c4bd64830e4d8f8f177fbf5ca9e74b2` | `e48c4b791f9ec53f107dff3d016f014c5c4bd64830e4d8f8f177fbf5ca9e74b2` (unchanged, no local path) |
+| `exec.log` | `431b92a65d406ed9af356b52852778a7e3370c78f0f79949a6525b5206377262` | `c941aab645a1f5cb51859a3c5497960aa763e9b7b3ff36c15c08daa5f1a35d20` (2 local-path replacements) |
+| `run_summary.json` | `afdb391f1b09f0a4f763e32a8a0ac242717f33fbaa4c9928eaf945ef0f4f4aad` | `afdb391f1b09f0a4f763e32a8a0ac242717f33fbaa4c9928eaf945ef0f4f4aad` (unchanged, no local path) |
+
+| File (under `docs/execution-evidence/2026-11-03-e07b29d/inference-refusal/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `mask2former_panoptic_colab_e07b29d_colab-cli-t4_refusal.ipynb` | `062a846c414b793d266d8d885c696db112f0c674103c1d992e2913fa29285000` | `062a846c414b793d266d8d885c696db112f0c674103c1d992e2913fa29285000` (unchanged, no local path) |
+| `exec.log` | `a5ae60fd0d1545fe6079eea3d4a1915777d88b3a543a2f64098d51f364be1e89` | `adfadf2b73ef65e358b9c1ee6328d2ef4368d501d32a741358d1063264510491` (2 local-path replacements) |
+| `run_summary.json` | `3b106efe7893c0e408fc12d48123490a74eeb0477e832914edf1f603d1593d9f` | `3b106efe7893c0e408fc12d48123490a74eeb0477e832914edf1f603d1593d9f` (unchanged, no local path) |
+| `run_copy.ipynb` | `20de2f050142642f4fbd8b1b07c5f9be635e9aee1bd2aa18022508306aa38def` | `20de2f050142642f4fbd8b1b07c5f9be635e9aee1bd2aa18022508306aa38def` (unchanged, no local path) |
+
+Not exercised by these runs: an accepted BYOD input (REL12), a browser `Run all` of the interactive journeys (REL2), and every other open gate named in this file; these runs close none of them.
+
+### Hosted Colab T4 runs of blob `f7152bb8` (2026-11-03) — `tutorials/mask2former_panoptic_finetune_colab.ipynb`
+
+These runs executed `main` at `e07b29da2c0a619f0bf10997f6cbf1555bc5a56e`, notebook `tutorials/mask2former_panoptic_finetune_colab.ipynb` blob `f7152bb8a65f4a8db8003470e2d53c3de861a3ea`, fetched at the 40-character SHA and Git-blob verified, with the Colab CLI (`colab exec -f`) on a fresh Colab Tesla T4 session: sequential CLI execution, not a browser `Run all` (the Colab CLI version is not recorded in `exec.log` or `run_summary.json`). Each `run_summary.json` records `verdict` `PASS`, `exec_exit_code` 0, `input_unchanged` true and `stop_verified` true (the VM was released), and the SHA-256 of each executed notebook equals the summary's `executed_sha256`.
+
+**One pass, no restart, 0 errors** (default path, 2026-11-03 00:26:23 UTC start). Default settings, no overrides; session `suite-mask2former-e07b29d-51f6`; wall 133.5 s (`wall_s`); `code_cells` 15, all logged in order by `exec.log` (`executed_cells` 13: the cells that printed output); 0 errors. Retained evidence: [`execution-evidence/2026-11-03-e07b29d/finetune/`](execution-evidence/2026-11-03-e07b29d/finetune/).
+
+Printed by the default run (verbatim lines from the executed outputs):
+
+```text
+{'verified_files': 4, 'revision': 'df6b1142ff50c3276559d9d78f35f6a579c75a77'}
+{'baseline_pq': 0.0, 'sq': 0.0, 'rq': 0.0, 'things_pq': 0.0, 'stuff_pq': 0.0, 'seconds': 0.9}
+{'trivial_horizon_split_pq': 0.3184, 'horizon_row': 160, 'stuff_pq': 0.7961, 'things_pq': 0.0, 'per_class': {'sky': 0.822, 'ground': 0.77, 'box': 0.0, 'disc': 0.0, 'triangle': 0.0}}
+mean epoch loss 33.588 -> 6.545 over 6 epochs (optimisation evidence only)
+{'adapted_pq': 0.9623, 'sq': 0.9904, 'rq': 0.9714, 'things_pq': 0.9381, 'stuff_pq': 0.9987, 'seconds': 0.7}
+{'new_data_pq': 0.8093, 'n_images': 4}
+{'reloaded_pq': 0.962324, 'adapted_pq': 0.962324}
+{'pixel_agreement_first_held_out_scene': 1.0}
+fresh reload reproduces the adapted score and map exactly
+```
+
+**Refused as designed** (DAT20 refusal record, 2026-11-03 00:42:13 UTC start, blob `f7152bb8`). Overrides, set by `--set` on a copy of the blob: `USE_BYOD_IMAGE` `False` → `True` and `BYOD_IMAGE_PATH` `''` → `'/etc/hostname'`. The suite cut the run copy right after the refusing cell `mask2former_panoptic_finetune-32`, dropping 1 cell (0 of them code cells), which reproduces `Run all` stopping at the first error; the cut copy is `run_copy.ipynb`, SHA-256 `3ecf844c33249f098258de7ab3193342ff3a5abb8f8450dd4afba0aa1ff4a89c` (Git blob `146db760`), equal to the summary's `run_copy_sha256`. Its 15 code cells were logged in order by `exec.log`; the earlier code cells completed without an error output; the refusing cell's only error output has `ename` `IsolatedCellRefusal` and no Python stack trace (its traceback is the single refusal line), and its output holds exactly one `Refused:` line:
+
+```text
+Refused: hostname: not an image Pillow can read (UnidentifiedImageError); give a JPEG, PNG, TIFF or WebP file and re-run this cell (the earlier BYOD results of this session and their outputs/ files were removed)
+```
+
+This run says nothing about the 1 cut cell, which did not run in it. Session `suite-mask2former-e07b29d-51f6`, wall 139.1 s. Retained evidence: [`execution-evidence/2026-11-03-e07b29d/finetune-refusal/`](execution-evidence/2026-11-03-e07b29d/finetune-refusal/).
+
+**Local-path redaction.** Local paths were replaced byte-wise by `<local-run-dir>` (and the Colab CLI install path by `<colab-cli-tool-dir>/`, where present) before the first commit; each executed notebook and run copy was checked against its `run_summary.json` before any edit.
+
+| File (under `docs/execution-evidence/2026-11-03-e07b29d/finetune/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `mask2former_panoptic_finetune_colab_e07b29d_colab-cli-t4_default.ipynb` | `9c7fa8c9521add70a8fa6c9b167815eb734f6ffda8587b8f4f5b5fbf7f120913` | `9c7fa8c9521add70a8fa6c9b167815eb734f6ffda8587b8f4f5b5fbf7f120913` (unchanged, no local path) |
+| `exec.log` | `7bcb211a0c28175b6321afae4012beac53d32ad5c4747df70c717f8489ef54f0` | `80dfc003792b841f101c90df19f520b2bc7a30328b4b656bd0d99e43cd71c4df` (2 local-path replacements) |
+| `run_summary.json` | `94f2f10d4e5621ecb88c5f080fae2032dd77152276738883c01d29cedea7349f` | `94f2f10d4e5621ecb88c5f080fae2032dd77152276738883c01d29cedea7349f` (unchanged, no local path) |
+
+| File (under `docs/execution-evidence/2026-11-03-e07b29d/finetune-refusal/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `mask2former_panoptic_finetune_colab_e07b29d_colab-cli-t4_refusal.ipynb` | `fe514d440812f5c62bfc35a4ea16c0dbee64b2039b21dc038bf0e7d294d39dab` | `fe514d440812f5c62bfc35a4ea16c0dbee64b2039b21dc038bf0e7d294d39dab` (unchanged, no local path) |
+| `exec.log` | `da25a98a232618c6cb54a27e2a0052d585b08963acc768bd7de825d7edb64a1b` | `56370e57ba150c528b6300c98f149b32a0be64a479274b9adc5ba7cd3cf83889` (2 local-path replacements) |
+| `run_summary.json` | `8c6b132cafbe4ed31a983fc156e01e1ce60ac0c2e51931ab9a22bf2f5ecd40e9` | `8c6b132cafbe4ed31a983fc156e01e1ce60ac0c2e51931ab9a22bf2f5ecd40e9` (unchanged, no local path) |
+| `run_copy.ipynb` | `3ecf844c33249f098258de7ab3193342ff3a5abb8f8450dd4afba0aa1ff4a89c` | `3ecf844c33249f098258de7ab3193342ff3a5abb8f8450dd4afba0aa1ff4a89c` (unchanged, no local path) |
+
+Not exercised by these runs: an accepted BYOD input (REL12), a browser `Run all` of the interactive journeys (REL2), and every other open gate named in this file; these runs close none of them.
+
 ## Current status
 
-**Candidate (DAT19/DAT20 refusal display, code commit `bcf9cd9`).** Both notebooks were regenerated: `tutorials/mask2former_panoptic_colab.ipynb` is now blob `866cc839` and `tutorials/mask2former_panoptic_finetune_colab.ipynb` is now blob `5f9583c6`. A refused BYOD input shows one `Refused: <file>: <reason>` line with no traceback, removes the earlier run's results and `outputs/` files, and stops Run all at that cell, while genuine failures keep their traceback. The fine-tune notebook's tier C wording residue (unlabelled CPU and T4 timing claims, the worked-answer label) was fixed in the same change. For the inference blob `866cc839`, its default path (2026-10-29; 13 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-10-29; `USE_BYOD=True;BYOD_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic-15`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`); for the fine-tune blob `5f9583c6`, its default path (2026-10-29; 15 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-10-29; `USE_BYOD_IMAGE=True;BYOD_IMAGE_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic_finetune-32`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`); the hosted runs of earlier blobs, including `408a1aba` and `4f49de85`, are history for them (REL14).
+The current blobs `353ec10e` (inference) and `f7152bb8` (fine-tune) (`main` at `e07b29d`, after the 2026-11 lock upgrades) show a refused BYOD input as exactly one `Refused: <file>: <reason>` line, with no traceback, and stop Run all at that cell. For the inference blob `353ec10e`, its default path (2026-11-03; 13 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-11-03; `USE_BYOD=True;BYOD_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic-15`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4; for the fine-tune blob `f7152bb8`, its default path (2026-11-03; 15 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-11-03; `USE_BYOD_IMAGE=True;BYOD_IMAGE_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic_finetune-32`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`). The hosted runs of earlier blobs, including `866cc839` and `5f9583c6`, are history for them (REL14). Open for these blobs: REL12 (a hosted BYOD run with one accepted and one refused input), REL2 (a browser `Run all`) and the fine-tune notebook's Section 13 activity, which has no hosted run on `f7152bb8`; every other open gate in `docs/release-verification.md` stays open.
+
+**Candidate (DAT19/DAT20 refusal display, code commit `bcf9cd9`; the current blobs on 2026-10-29, history since the 2026-11 lock upgrades).** Both notebooks were regenerated: `tutorials/mask2former_panoptic_colab.ipynb` became blob `866cc839` and `tutorials/mask2former_panoptic_finetune_colab.ipynb` became blob `5f9583c6`. A refused BYOD input shows one `Refused: <file>: <reason>` line with no traceback, removes the earlier run's results and `outputs/` files, and stops Run all at that cell, while genuine failures keep their traceback. The fine-tune notebook's tier C wording residue (unlabelled CPU and T4 timing claims, the worked-answer label) was fixed in the same change. For the inference blob `866cc839`, its default path (2026-10-29; 13 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-10-29; `USE_BYOD=True;BYOD_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic-15`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`); for the fine-tune blob `5f9583c6`, its default path (2026-10-29; 15 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-10-29; `USE_BYOD_IMAGE=True;BYOD_IMAGE_PATH=/etc/hostname`: exactly one `Refused:` line at cell `mask2former_panoptic_finetune-32`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`); the hosted runs of earlier blobs, including `408a1aba` and `4f49de85`, are history for them (REL14).
 
 **Candidate (2026-10-26, final prose pass).** The notebook blob of `tutorials/mask2former_panoptic_finetune_colab.ipynb` was then `4f49de85ea3a177f08fe4a212cd607b16d382bac` (commit `df0b493`), regenerated from `65fdc55` under Kurt's 2026-10-26 ruling to fix only the prose-rule items flagged on the confirming run of `f5c34402`: the Section 8 interpretation no longer states an unlabelled 'stuff PQ near 1.0'; it points to the stuff PQ printed above beside the horizon predictor's 0.796. Markdown only; no code or output changed, and the drift recorded for that run below is kept, not fixed. This exact blob (PR #11 head `0d71b87`) **passed** its confirming hosted run: Colab CLI sequential execution on a fresh Colab Tesla T4, 2026-10-26, 15/15 code cells in one pass, no restart, 0 errors, 108.8 s wall; held-out PQ 0.0 → 0.9173, things 0.8633, new scenes 0.8842, reload exact; evidence in `docs/execution-evidence/2026-10-26-0d71b87/finetune/`. This PR's runs cover the fine-tune notebook's default path only. Remaining gates: REL12 (a hosted BYOD run with one accepted and one refused input) and REL2 (a browser Run all). Runs of earlier blobs are history (REL14). The confirming run of `f5c34402` and the earlier records below stay as history.
 
@@ -313,8 +402,8 @@ with one accepted and one rejected BYOD input (REL1, REL12); the CLI run exercis
 **`E2E` notebook after the fleet-sweep and M2F review fixes (2026-10-07):** it shares the inference notebook's
 isolated environment, pins file and 48-package lock (generator /2.2), so no restart should be needed; the Section 7
 fine-tune cell rebuilds the re-headed model when `adapter` was already trained, so a re-run never stacks training
-(M2F-M3); a horizon-split trivial predictor is recorded beside the all-`sky` one (M2F-m3). The current blob
-`88249847d8bc` passed a Colab CLI 0.7.4 sequential execution on a fresh Colab Tesla T4 at `e5804e0` (2026-10-07,
+(M2F-M3); a horizon-split trivial predictor is recorded beside the all-`sky` one (M2F-m3). The blob
+`88249847d8bc` (the current blob on 2026-10-07; history) passed a Colab CLI 0.7.4 sequential execution on a fresh Colab Tesla T4 at `e5804e0` (2026-10-07,
 15/15 code cells, one pass, no restart, 0 errors, 119.5 s; held-out PQ 0.9264, see "Hosted Colab CLI runs"; default
 path only, not a browser Run all), and neither BYOD branch has been executed in any record. Remaining gates: one Colab T4
 Run all of the new blob in one pass, with the Section 13 activity and one accepted and one rejected BYOD dataset
